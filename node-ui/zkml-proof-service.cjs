@@ -141,10 +141,15 @@ app.post('/prove',
 
       if (path.basename(JOLT_PROVER_BIN) === 'proof_json_output') {
         // proof_json_output expects: <model_path> <input1> <input2> ...
-        // Using addsubmul0 model (1 input, 14 operations, ~60-120s per proof)
-        // Simple arithmetic model that provides cryptographic proof of computation
-        const inputVal = Math.round(confidence * 10);  // Use confidence as input (0-10)
-        args = [JOLT_MODEL_PATH, String(inputVal)];
+        // Using simple_text_classification model (5 inputs, 31 operations, ~3-6min per proof)
+        // Provides ML inference for transaction authorization
+        // All inputs MUST be in range 0-13 (embedding dimension size)
+        const in0 = decision % 14;  // Map decision to 0-13
+        const in1 = Math.round(confidence * 13);  // Scale confidence to 0-13
+        const in2 = Math.round(confidence * 10);  // Another confidence representation 0-10
+        const in3 = decision ? 5 : 2;  // Binary signal as 5 or 2
+        const in4 = Math.round(confidence * 7);  // Scaled to 0-7
+        args = [JOLT_MODEL_PATH, String(in0), String(in1), String(in2), String(in3), String(in4)];
         cwd = path.resolve(JOLT_PROVER_BIN, '..');
       } else {
         args = [
