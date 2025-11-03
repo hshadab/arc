@@ -104,9 +104,14 @@ The `simple_text_classification` model expects:
 
 ## Performance
 
-| Proof Type | Generation Time | Verification |
-|------------|----------------|--------------|
-| Simulated  | ~3-9 seconds   | Hash check   |
-| Real JOLT  | 2-3 minutes    | Full zkSNARK verification |
+| Proof Type | Generation Time | Trace Length | Verification |
+|------------|----------------|--------------|--------------|
+| Simulated  | ~3-9 seconds   | N/A          | Hash check   |
+| Real JOLT (addsubmul0) | ~60-120 seconds | 14 operations | Full zkSNARK verification |
+| Real JOLT (simple_text_classification) | ~120-180 seconds | 31 operations | Full zkSNARK verification |
+
+**Model Selection**: The demo uses `addsubmul0.onnx` (simplest arithmetic model, 200 bytes) for optimal proof generation speed. This model has 14 operations vs 31 for the text classification model, providing ~2x speedup.
+
+**Why Still Slow?**: JOLT proof generation has significant setup overhead (preprocessing, commitment scheme initialization) that dominates the runtime. Even the simplest model takes ~60-120 seconds.
 
 Both types require the same x402 payment (0.003 USDC) and produce on-chain commitments.

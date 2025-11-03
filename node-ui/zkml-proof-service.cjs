@@ -141,10 +141,11 @@ app.post('/prove',
 
       if (path.basename(JOLT_PROVER_BIN) === 'proof_json_output') {
         // proof_json_output expects: <model_path> <input1> <input2> ...
-        // The model expects 5 inputs in range 0-13 (embedding dimension size)
-        // Map decision (0/1) and confidence (0-1) to valid range
-        const conf = Math.round(confidence * 13);  // Scale to 0-13
-        args = [JOLT_MODEL_PATH, String(decision), String(conf), '1', '2', '3'];
+        // Using addsubmul0 model (1 input) for faster proof generation
+        // Trace length: 14 operations (vs 31 for text classification model)
+        // Combine decision and confidence into single input value
+        const combinedInput = decision + Math.round(confidence * 10);
+        args = [JOLT_MODEL_PATH, String(combinedInput)];
         cwd = path.resolve(JOLT_PROVER_BIN, '..');
       } else {
         args = [

@@ -155,10 +155,12 @@ SPEND_GATE_ADDRESS=       # SpendGate contract
 |-----------|------|------|
 | ONNX Inference | ~5ms | Free |
 | zkML Proof Generation (simulated) | ~3-9s | 0.003 USDC |
-| zkML Proof Generation (real JOLT) | 2-3 min | 0.003 USDC |
+| zkML Proof Generation (real JOLT, simple model) | ~60-120s | 0.003 USDC |
 | Commitment on Arc | ~2-3s | ~$0.001 gas |
 | Total Workflow (simulated) | ~6-13s | ~0.004 USDC |
-| Total Workflow (real proofs) | 2-3 min | ~0.004 USDC |
+| Total Workflow (real proofs) | ~70-130s | ~0.004 USDC |
+
+**Note**: Real JOLT proofs use the `addsubmul0` model (14 operations) for optimal speed. More complex models take proportionally longer.
 
 ## 🔗 Links
 
