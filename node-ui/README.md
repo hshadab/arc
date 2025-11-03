@@ -58,6 +58,9 @@ npm start
 Open: http://localhost:8616
 Click: "▶ Initiate User Request"
 Watch: Real-time workflow visualization with payment tracking
+
+⏱️  Note: Real ML proofs take ~2-3 minutes
+    For faster testing, disable JOLT in .env (uses simulated proofs)
 ```
 
 ## 🏗️ Architecture
@@ -92,10 +95,10 @@ Tool Execution: send_usdc(wfid=approved)
 - `WorkflowManager`: Final authorization decision maker
 
 **NovaNet zkML**
-- JOLT-Atlas proof generation for ONNX inference
+- JOLT-Atlas proof generation for ONNX inference (simple_text_classification model)
 - Cryptographic guarantee that AI model actually executed
-- Simulated proofs by default for demo speed (~3-9 seconds)
-- Real JOLT proofs available but take 2-3 minutes per proof
+- **Real ML proofs enabled by default** (~2-3 minutes per proof)
+- Simulated proofs available for faster testing (~5 seconds)
 
 **x402 Micropayments**
 - Coinbase's HTTP 402 Payment Required protocol
@@ -154,13 +157,13 @@ SPEND_GATE_ADDRESS=       # SpendGate contract
 | Component | Time | Cost |
 |-----------|------|------|
 | ONNX Inference | ~5ms | Free |
-| zkML Proof Generation (simulated) | ~3-9s | 0.003 USDC |
-| zkML Proof Generation (real JOLT, simple model) | ~60-120s | 0.003 USDC |
+| **zkML Proof Generation (real ML, default)** | **~2-3 min** | **0.003 USDC** |
+| zkML Proof Generation (simulated, optional) | ~5s | 0.003 USDC |
 | Commitment on Arc | ~2-3s | ~$0.001 gas |
-| Total Workflow (simulated) | ~6-13s | ~0.004 USDC |
-| Total Workflow (real proofs) | ~70-130s | ~0.004 USDC |
+| **Total Workflow (real ML proofs)** | **~2-3 min** | **~0.004 USDC** |
+| Total Workflow (simulated) | ~10s | ~0.004 USDC |
 
-**Note**: Real JOLT proofs use the `addsubmul0` model (14 operations) for optimal speed. More complex models take proportionally longer.
+**Note**: Real JOLT proofs use the `simple_text_classification` model (31 operations, 5 inputs) for meaningful ML authorization. Provides cryptographic proof that a neural network actually evaluated the transaction. For faster testing, comment out JOLT variables in `.env` to use simulated proofs.
 
 ## 🔗 Links
 

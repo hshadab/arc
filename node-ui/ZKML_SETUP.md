@@ -1,10 +1,14 @@
 # Real JOLT-Atlas zkML Proof Setup
 
-This document explains how to enable real JOLT-Atlas zkML proof generation for the Circle OOAK demo.
+This document explains the real JOLT-Atlas zkML proof generation for the Circle OOAK demo.
 
 ## Overview
 
-By default, the demo uses simulated zkML proofs for fast demonstration purposes (~3-9 seconds). Real JOLT proofs provide cryptographic guarantees but take 2-3 minutes to generate.
+✅ **Real ML proofs are now enabled by default!**
+
+The demo uses the `simple_text_classification` ONNX model to generate cryptographic proofs that a neural network actually evaluated the transaction. Real JOLT proofs take ~2-3 minutes but provide true zkML guarantees.
+
+For faster testing, you can switch to simulated proofs (~5 seconds) by commenting out the JOLT variables in `.env`.
 
 ## Prerequisites
 
@@ -25,27 +29,20 @@ cp /home/hshadab/zkx402/zkx402-agent-auth/jolt-atlas-fork/target/release/zkml-jo
 
 ### 2. Copy ONNX Model
 
-```bash
-# Create models directory
-mkdir -p models
+✅ Already done! The `simple_text_classification.onnx` model is included.
 
-# Copy the simple text classification model
-cp /home/hshadab/zkx402/zkx402-agent-auth/jolt-atlas-fork/onnx-tracer/models/simple_text_classification/network.onnx ./models/network.onnx
-```
+### 3. Configuration (.env)
 
-### 3. Enable in .env
-
-Edit your `.env` file and uncomment the JOLT configuration:
+✅ Real proofs are enabled by default!
 
 ```bash
-# JOLT-Atlas zkML Configuration (Optional - commented out for demo speed)
-# Uncomment to enable real JOLT proofs (takes 2-3 minutes per proof)
+# JOLT-Atlas zkML Configuration (Real proofs enabled by default)
 JOLT_PROVER_BIN=/home/hshadab/arc/ooak/node-ui/proof_json_output
-JOLT_MODEL_PATH=/home/hshadab/arc/ooak/node-ui/models/network.onnx
-OOAK_ONNX_MODEL=/home/hshadab/arc/ooak/node-ui/models/network.onnx
+JOLT_MODEL_PATH=/home/hshadab/arc/ooak/node-ui/models/simple_text_classification.onnx
+OOAK_ONNX_MODEL=/home/hshadab/arc/ooak/node-ui/models/simple_text_classification.onnx
 ```
 
-Or use absolute paths specific to your system.
+**To use simulated proofs** (faster testing), comment out the above lines.
 
 ### 4. Restart Services
 
@@ -107,11 +104,10 @@ The `simple_text_classification` model expects:
 | Proof Type | Generation Time | Trace Length | Verification |
 |------------|----------------|--------------|--------------|
 | Simulated  | ~3-9 seconds   | N/A          | Hash check   |
-| Real JOLT (addsubmul0) | ~60-120 seconds | 14 operations | Full zkSNARK verification |
 | Real JOLT (simple_text_classification) | ~120-180 seconds | 31 operations | Full zkSNARK verification |
 
-**Model Selection**: The demo uses `addsubmul0.onnx` (simplest arithmetic model, 200 bytes) for optimal proof generation speed. This model has 14 operations vs 31 for the text classification model, providing ~2x speedup.
+**Model Selection**: The demo uses `simple_text_classification.onnx` (meaningful ML model for transaction authorization) by default. This provides cryptographic proof that a real neural network evaluated the transaction, giving the zkML proof semantic meaning rather than just being a computation proof.
 
-**Why Still Slow?**: JOLT proof generation has significant setup overhead (preprocessing, commitment scheme initialization) that dominates the runtime. Even the simplest model takes ~60-120 seconds.
+**Why Still Slow?**: JOLT proof generation has significant setup overhead (preprocessing, commitment scheme initialization) that dominates the runtime (~70-80% of total time). Even simpler models would only provide ~2x speedup.
 
 Both types require the same x402 payment (0.003 USDC) and produce on-chain commitments.
