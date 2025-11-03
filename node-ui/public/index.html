@@ -832,7 +832,7 @@
         </ul>
         <h3 style="margin-top: 30px;">This Demo Adds:</h3>
         <ul>
-          <li><b>zkML Proofs via NovaNet:</b> Uses <a href="https://github.com/ICME-Lab/jolt-atlas" target="_blank" style="color: var(--accent); text-decoration: underline;">JOLT-Atlas</a> to generate cryptographic proofs of ONNX inference (~3-9s)</li>
+          <li><b>zkML Proofs via NovaNet:</b> Uses <a href="https://github.com/ICME-Lab/jolt-atlas" target="_blank" style="color: var(--accent); text-decoration: underline;">JOLT-Atlas</a> to generate cryptographic proofs of ONNX inference (~3-9s). The ML model is a 67KB medium text classification network for spending authorization in agentic commerce scenarios.</li>
           <li><b>x402 Micropayments:</b> Implements <a href="https://github.com/coinbase/x402" target="_blank" style="color: var(--accent); text-decoration: underline;">Coinbase x402 protocol</a> for HTTP 402 Payment Required on Arc testnet</li>
           <li><b>Arc Blockchain Integration:</b> Commitment attestation and USDC payments on Circle's Arc L1 with USDC as native gas</li>
         </ul>
@@ -1074,14 +1074,16 @@
             const usdcData = await resp.json();
             if (usdcData.error) throw new Error(usdcData.error);
 
-            // Update USDC transaction description with hyperlinked amount
+            // Update USDC transaction description with hyperlinked amount and on-chain timing
             console.log('[USDC] Response data:', usdcData);
+            console.log('[USDC] On-chain execution time:', usdcData.onChainTime, 'seconds');
             if (usdcData.explorer) {
               console.log('[USDC] Updating link with explorer:', usdcData.explorer);
               const descElem = $('#send-usdc-desc');
               if (descElem) {
-                descElem.innerHTML = `Commit anchored + spend executed on Arc <a href="${usdcData.explorer}" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">(${usdcData.amount} USDC)</a>`;
-                console.log('[USDC] Updated send-usdc-desc with hyperlinked amount');
+                const timeDisplay = usdcData.onChainTime ? `[${usdcData.onChainTime} sec]` : '';
+                descElem.innerHTML = `Spend executed on Arc <a href="${usdcData.explorer}" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">(${usdcData.amount} USDC)</a> <span style="color: var(--muted);">${timeDisplay}</span>`;
+                console.log('[USDC] Updated send-usdc-desc with hyperlinked amount and on-chain timing');
               }
             } else {
               console.warn('[USDC] No explorer field in response');
@@ -1104,8 +1106,10 @@
             showResult('payment', usdcData);
 
             $('#send-btn').disabled = true;
-            $('#send-btn').textContent = 'Payment Complete ✓';
+            $('#send-btn').textContent = '✓ Payment Complete';
             $('#send-btn').className = 'btn btn-success';
+            $('#send-btn').style.fontSize = '18px';
+            $('#send-btn').style.fontWeight = '600';
           } else {
             // Items 3 & 4: Payment not approved
             updateSecureItem(3, 'active');

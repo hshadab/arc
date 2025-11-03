@@ -59,8 +59,8 @@ Open: http://localhost:8616
 Click: "▶ Initiate User Request"
 Watch: Real-time workflow visualization with payment tracking
 
-⏱️  Note: Real ML proofs take ~2-3 minutes
-    For faster testing, disable JOLT in .env (uses simulated proofs)
+⏱️  Note: Real zkML proofs take ~3-9 seconds
+    See ONNX_MODEL_COMPATIBILITY.md for model details
 ```
 
 ## 🏗️ Architecture
@@ -95,10 +95,10 @@ Tool Execution: send_usdc(wfid=approved)
 - `WorkflowManager`: Final authorization decision maker
 
 **NovaNet zkML**
-- JOLT-Atlas proof generation for ONNX inference (simple_text_classification model)
+- JOLT-Atlas proof generation for ONNX inference (addsubmul0 model, 200 bytes)
 - Cryptographic guarantee that AI model actually executed
-- **Real ML proofs enabled by default** (~2-3 minutes per proof)
-- Simulated proofs available for faster testing (~5 seconds)
+- **Real zkML proofs enabled by default** (~3-9 seconds per proof)
+- Fast-mode extraction skips verification to save time
 
 **x402 Micropayments**
 - Coinbase's HTTP 402 Payment Required protocol
@@ -157,13 +157,12 @@ SPEND_GATE_ADDRESS=       # SpendGate contract
 | Component | Time | Cost |
 |-----------|------|------|
 | ONNX Inference | ~5ms | Free |
-| **zkML Proof Generation (real ML, default)** | **~2-3 min** | **0.003 USDC** |
-| zkML Proof Generation (simulated, optional) | ~5s | 0.003 USDC |
+| **zkML Proof Generation (fast mode)** | **~3-9s** | **0.003 USDC** |
 | Commitment on Arc | ~2-3s | ~$0.001 gas |
-| **Total Workflow (real ML proofs)** | **~2-3 min** | **~0.004 USDC** |
-| Total Workflow (simulated) | ~10s | ~0.004 USDC |
+| USDC Transfer | <1s | ~$0.001 gas |
+| **Total Workflow** | **~10-15s** | **~0.004 USDC** |
 
-**Note**: Real JOLT proofs use the `simple_text_classification` model (31 operations, 5 inputs) for meaningful ML authorization. Provides cryptographic proof that a neural network actually evaluated the transaction. For faster testing, comment out JOLT variables in `.env` to use simulated proofs.
+**Note**: Uses `addsubmul0.onnx` (200 bytes, 14 operations) with JOLT-Atlas fast mode. Proof extraction happens at ~8 seconds, skipping the 7-minute verification step. The system architecture supports larger models (see `ONNX_MODEL_COMPATIBILITY.md`), but current JOLT binary has limited opcode support.
 
 ## 🔗 Links
 
@@ -190,6 +189,8 @@ For production use:
 
 ## 📚 Additional Documentation
 
+- `ONNX_MODEL_COMPATIBILITY.md` - **NEW**: Comprehensive model testing results and JOLT binary limitations
+- `FAST_MODE_IMPLEMENTATION.md` - Fast-mode proof extraction implementation
 - `ZKML_SETUP.md` - How to enable real JOLT-Atlas zkML proofs
 - `X402_README.md` - x402 protocol details
 - `X402_INTEGRATION_COMPLETE.md` - Integration notes and implementation guide

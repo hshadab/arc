@@ -565,8 +565,11 @@ app.post('/api/send-usdc', async (req, res) => {
       commitment.agent,
       commitment.attestor,
     ];
+    // Track on-chain execution time only
+    const txStartTime = Date.now();
     const tx = await gate.spend(commitmentArr, signature, { value: amtWei });
     const receipt = await tx.wait();
+    const onChainTime = ((Date.now() - txStartTime) / 1000).toFixed(3);
 
     // Get commitment details from the approval response (already stored on-chain)
     let commitId = approval?.commit?.id || null;
@@ -597,6 +600,7 @@ app.post('/api/send-usdc', async (req, res) => {
       from: wallet.address,
       to,
       amount: amountStr,
+      onChainTime,
       commit: {
         commitId,
         registry: COMMITMENT_REGISTRY_ADDRESS,
