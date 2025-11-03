@@ -3,6 +3,11 @@
 *.env
 !.env.example
 
+# JOLT-Atlas binaries (too large for GitHub - see ZKML_SETUP.md)
+node-ui/proof_json_output
+node-ui/zkml-jolt-core
+node-ui/models/
+
 # Dependencies
 node_modules/
 .venv/

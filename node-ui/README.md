@@ -94,7 +94,8 @@ Tool Execution: send_usdc(wfid=approved)
 **NovaNet zkML**
 - JOLT-Atlas proof generation for ONNX inference
 - Cryptographic guarantee that AI model actually executed
-- ~3-9 seconds per proof (simulated in demo)
+- Simulated proofs by default for demo speed (~3-9 seconds)
+- Real JOLT proofs available but take 2-3 minutes per proof
 
 **x402 Micropayments**
 - Coinbase's HTTP 402 Payment Required protocol
@@ -141,6 +142,11 @@ ARC_RPC_URL=              # Arc testnet RPC endpoint
 ARC_CHAIN_ID=             # Arc testnet chain ID (5042002)
 COMMITMENT_REGISTRY_ADDRESS=   # CommitmentRegistry contract
 SPEND_GATE_ADDRESS=       # SpendGate contract
+
+# Optional: Enable real JOLT-Atlas zkML proofs (takes 2-3 min/proof)
+# JOLT_PROVER_BIN=        # Path to proof_json_output binary
+# JOLT_MODEL_PATH=        # Path to ONNX model
+# OOAK_ONNX_MODEL=        # Path to ONNX model for availability check
 ```
 
 ## 📊 Performance
@@ -148,9 +154,11 @@ SPEND_GATE_ADDRESS=       # SpendGate contract
 | Component | Time | Cost |
 |-----------|------|------|
 | ONNX Inference | ~5ms | Free |
-| zkML Proof Generation | ~3-9s | 0.003 USDC |
+| zkML Proof Generation (simulated) | ~3-9s | 0.003 USDC |
+| zkML Proof Generation (real JOLT) | 2-3 min | 0.003 USDC |
 | Commitment on Arc | ~2-3s | ~$0.001 gas |
-| Total Workflow | ~6-13s | ~0.004 USDC |
+| Total Workflow (simulated) | ~6-13s | ~0.004 USDC |
+| Total Workflow (real proofs) | 2-3 min | ~0.004 USDC |
 
 ## 🔗 Links
 
@@ -177,6 +185,7 @@ For production use:
 
 ## 📚 Additional Documentation
 
+- `ZKML_SETUP.md` - How to enable real JOLT-Atlas zkML proofs
 - `X402_README.md` - x402 protocol details
 - `X402_INTEGRATION_COMPLETE.md` - Integration notes and implementation guide
 

@@ -140,7 +140,11 @@ app.post('/prove',
       let cwd = path.resolve(JOLT_PROVER_BIN, '..', '..');
 
       if (path.basename(JOLT_PROVER_BIN) === 'proof_json_output') {
-        args = [JOLT_MODEL_PATH, '500', '10000', '200', '1500', '80'];
+        // proof_json_output expects: <model_path> <input1> <input2> ...
+        // The model expects 5 inputs in range 0-13 (embedding dimension size)
+        // Map decision (0/1) and confidence (0-1) to valid range
+        const conf = Math.round(confidence * 13);  // Scale to 0-13
+        args = [JOLT_MODEL_PATH, String(decision), String(conf), '1', '2', '3'];
         cwd = path.resolve(JOLT_PROVER_BIN, '..');
       } else {
         args = [
