@@ -1,0 +1,39 @@
+{
+  "name": "circle-ooak-novanet-arc-demo",
+  "version": "1.0.0",
+  "description": "Circle OOAK + NovaNet zkML + x402 Micropayments on Arc",
+  "main": "server.cjs",
+  "scripts": {
+    "start": "node server.cjs",
+    "zkml": "node zkml-proof-service.cjs",
+    "dev": "echo 'Start zkML service in Terminal 1: npm run zkml' && echo 'Start server in Terminal 2: npm start'",
+    "demo": "node server.cjs"
+  },
+  "keywords": [
+    "circle",
+    "ooak",
+    "zkml",
+    "novanet",
+    "x402",
+    "arc",
+    "blockchain",
+    "usdc",
+    "agent",
+    "micropayments"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ethers": "^6.13.4",
+    "express": "^4.21.1",
+    "onnxruntime-node": "^1.20.1",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hshadab/arc"
+  }
+}
