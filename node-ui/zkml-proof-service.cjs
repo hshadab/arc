@@ -3,7 +3,7 @@
 
 const express = require('express');
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '..', '..', '.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const { createX402Middleware } = require('./x402-middleware.cjs');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
