@@ -171,8 +171,8 @@ app.post('/prove',
       let proofReturned = false;
 
       // Fast mode: Use timeout-based extraction instead of marker detection
-      // After 8 seconds (enough for proving), extract proof and kill verification
-      console.log('[FAST MODE] Setting 8-second timeout for proof extraction...');
+      // After 15 seconds (enough for proving), extract proof and kill verification
+      console.log('[FAST MODE] Setting 15-second timeout for proof extraction...');
       const fastModeTimeout = setTimeout(() => {
         if (proofReturned) return; // Already handled
 
@@ -259,7 +259,7 @@ app.post('/prove',
             paymentReceived: req.payment
           });
         }
-      }, 8000); // 8 second timeout
+      }, 15000); // 15 second timeout for percentage_limit model
 
       child.stderr.on('data', (d) => { err += d.toString(); });
       child.stdout.on('data', (d) => { out += d.toString(); });

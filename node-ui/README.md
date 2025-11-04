@@ -59,7 +59,7 @@ Open: http://localhost:8616
 Click: "▶ Initiate User Request"
 Watch: Real-time workflow visualization with payment tracking
 
-⏱️  Note: Real zkML proofs take ~3-9 seconds
+⏱️  Note: Real zkML proofs take ~10-15 seconds
     See ONNX_MODEL_COMPATIBILITY.md for model details
 ```
 
@@ -95,10 +95,11 @@ Tool Execution: send_usdc(wfid=approved)
 - `WorkflowManager`: Final authorization decision maker
 
 **NovaNet zkML**
-- JOLT-Atlas proof generation for ONNX inference (addsubmul0 model, 200 bytes)
+- JOLT-Atlas proof generation for ONNX inference (percentage_limit model, 1KB)
 - Cryptographic guarantee that AI model actually executed
-- **Real zkML proofs enabled by default** (~3-9 seconds per proof)
+- **Real zkML proofs enabled by default** (~10-15 seconds per proof)
 - Fast-mode extraction skips verification to save time
+- Uses zkx402 enhanced fork with Division and Comparison operations
 
 **x402 Micropayments**
 - Coinbase's HTTP 402 Payment Required protocol
@@ -157,12 +158,12 @@ SPEND_GATE_ADDRESS=       # SpendGate contract
 | Component | Time | Cost |
 |-----------|------|------|
 | ONNX Inference | ~5ms | Free |
-| **zkML Proof Generation (fast mode)** | **~3-9s** | **0.003 USDC** |
+| **zkML Proof Generation (fast mode)** | **~10-15s** | **0.003 USDC** |
 | Commitment on Arc | ~2-3s | ~$0.001 gas |
 | USDC Transfer | <1s | ~$0.001 gas |
-| **Total Workflow** | **~10-15s** | **~0.004 USDC** |
+| **Total Workflow** | **~15-20s** | **~0.004 USDC** |
 
-**Note**: Uses `addsubmul0.onnx` (200 bytes, 14 operations) with JOLT-Atlas fast mode. Proof extraction happens at ~8 seconds, skipping the 7-minute verification step. The system architecture supports larger models (see `ONNX_MODEL_COMPATIBILITY.md`), but current JOLT binary has limited opcode support.
+**Note**: Uses `percentage_limit.onnx` (1KB, 15 operations) from zkx402 with JOLT-Atlas enhanced fork. This model implements real spending authorization logic ("Don't spend more than X% of balance"). Proof extraction happens at ~15 seconds, skipping the 7-minute verification step. The enhanced fork adds Division and Comparison operations not available in standard JOLT-Atlas.
 
 ## 🔗 Links
 
