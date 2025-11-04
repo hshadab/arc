@@ -257,7 +257,7 @@ async function inferONNX(amount, risk) {
   return { decision, confidence, score: Number(risk) };
 }
 
-// Orchestrated approval: ONNX → zkML → Groth16 → Verify
+// Orchestrated approval: ONNX → zkML → Attestation
 app.post('/api/approve', async (req, res) => {
   try {
     const { amount = 25.0, risk = 0.05, useX402 = true } = req.body || {};
