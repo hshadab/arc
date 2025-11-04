@@ -24,13 +24,15 @@ def main() -> None:
     print("\n=== Circle-OOAK ZK Approval Result ===")
     print(f"Decision: {'APPROVE' if result.decision == 1 else 'DENY'}")
     print(f"Confidence: {result.confidence}%")
-    print(f"On-chain verified: {result.onchain_verified}")
+    print(f"Attestation verified: {result.onchain_verified}")
     if result.jolt:
         print(f"JOLT proof hash: {result.jolt['proof_hash']}")
+        if result.jolt.get('signature'):
+            print(f"JOLT signature: {result.jolt['signature'][:20]}...")
 
-    print("\nGroth16 calldata (a,b,c,publicSignals):")
+    print("\nFull approval artifacts:")
     pp = pprint.PrettyPrinter(indent=2, width=100)
-    pp.pprint(result.groth16)
+    pp.pprint({"decision": result.decision, "confidence": result.confidence, "jolt": result.jolt})
 
 
 if __name__ == "__main__":

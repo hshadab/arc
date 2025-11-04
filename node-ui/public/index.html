@@ -754,12 +754,12 @@
           </div>
 
           <!-- Result: On-Chain Verification -->
-          <div class="result-card" id="result-groth16">
+          <div class="result-card" id="result-attestation">
             <div class="result-header">
               <span style="font-weight:600; font-size:16px;">On-Chain Attested Commitment</span>
               <span class="result-badge success">SUCCESS</span>
             </div>
-            <pre id="result-groth16-content"></pre>
+            <pre id="result-attestation-content"></pre>
           </div>
 
           <!-- Result: Commitment Details -->
@@ -945,7 +945,7 @@
         for (let i = 1; i <= 4; i++) updateSecureItem(i, '');
         updateSecureItem('1b', ''); // Reset zkML proof step
         for (let i = 1; i <= 4; i++) updateArrow(i, false);
-        ['onnx', 'jolt', 'groth16', 'manager', 'payment'].forEach(id => {
+        ['onnx', 'jolt', 'attestation', 'manager', 'payment'].forEach(id => {
           $(`#result-${id}`)?.classList.add('hidden');
         });
         $('#send-btn').disabled = true;
@@ -1029,7 +1029,7 @@
           updateSecureItem(2, 'success');
 
           updateFlowBox(4, 'success');
-          showResult('groth16', {
+          showResult('attestation', {
             attestation: 'EIP-712 signature verified on-chain',
             registry: 'CommitmentRegistry (Arc testnet)',
             note: 'Attested commitment will be created on spend'

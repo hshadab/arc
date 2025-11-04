@@ -2,7 +2,7 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '..', '.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '.env'), override: true }); // Load local .env
-// Serves a simple UI and exposes endpoints to run zkML (JOLT) + Groth16 + on-chain verify.
+// Serves a simple UI and exposes endpoints to run zkML (JOLT) + zkML + attestation.
 
 const express = require('express');
 const fs = require('fs');
@@ -186,81 +186,6 @@ app.post('/api/zkml/prove', async (req, res) => {
   }
 });
 
-// Prove Groth16 (decision, confidence [, proofHashF])
-app.post('/api/groth16/prove', async (req, res) => {
-  try {
-    const { decision, confidence, proofHashF } = req.body || {};
-    if (decision === undefined || confidence === undefined) {
-      return res.status(400).json({ error: 'decision and confidence required' });
-    }
-
-    let useBinding = false;
-    let wasm, genWitness, zkey, input, witness, proofPath, publicPath;
-
-    if (BINDING_DIR) {
-      const w = path.join(BINDING_DIR, 'decision_with_binding_js', 'decision_with_binding.wasm');
-      const gw = path.join(BINDING_DIR, 'decision_with_binding_js', 'generate_witness.js');
-      const zk = path.join(BINDING_DIR, 'decision_with_binding_final.zkey');
-      if (fs.existsSync(w) && fs.existsSync(gw) && fs.existsSync(zk)) {
-        useBinding = true;
-        wasm = w; genWitness = gw; zkey = zk;
-        input = path.join(BINDING_DIR, 'input_binding.json');
-        witness = path.join(BINDING_DIR, 'witness_binding.wtns');
-        proofPath = path.join(BINDING_DIR, 'proof_binding.json');
-        publicPath = path.join(BINDING_DIR, 'public_binding.json');
-        if (!proofHashF) return res.status(400).json({ error: 'proofHashF required for binding circuit' });
-        fs.writeFileSync(input, JSON.stringify({ decision: String(decision), confidence: String(confidence), proofHash: String(proofHashF) }));
-      }
-    }
-    if (!useBinding) {
-      if (REQUIRE_BINDING) {
-        return res.status(400).json({ error: 'binding_assets_missing', message: 'Set OOAK_BINDING_CIRCUIT_DIR to a compiled binding circuit with decision_with_binding_js/*.wasm and generate_witness.js' });
-      }
-      wasm = path.join(CIRCUIT_DIR, 'jolt_decision_simple_js', 'jolt_decision_simple.wasm');
-      genWitness = path.join(CIRCUIT_DIR, 'jolt_decision_simple_js', 'generate_witness.js');
-      zkey = path.join(CIRCUIT_DIR, 'jolt_decision_simple_final.zkey');
-      input = path.join(CIRCUIT_DIR, 'input_onchain.json');
-      witness = path.join(CIRCUIT_DIR, 'witness_onchain.wtns');
-      proofPath = path.join(CIRCUIT_DIR, 'proof_onchain.json');
-      publicPath = path.join(CIRCUIT_DIR, 'public_onchain.json');
-      fs.writeFileSync(input, JSON.stringify({ decision: String(decision), confidence: String(confidence) }));
-    }
-
-    // Generate proof via fullprove
-    const localSnark = path.resolve(ROOT, '..', 'node_modules', '.bin', 'snarkjs');
-    const snarkCmd = (cmd, args) => new Promise((resolve, reject) => {
-      console.log('snarkjs:', cmd, args.join(' '));
-      const p = spawn(cmd, args);
-      let e = '';
-      p.stderr.on('data', d => { e += d.toString(); });
-      p.on('close', (code) => {
-        if (code === 0) return resolve();
-        console.error('snarkjs exit', code, e);
-        reject(new Error(e || 'snarkjs failed'));
-      });
-    });
-    try {
-      if (fs.existsSync(localSnark)) {
-        await snarkCmd(localSnark, ['groth16', 'fullprove', input, wasm, zkey, proofPath, publicPath]);
-      } else {
-        await snarkCmd('snarkjs', ['groth16', 'fullprove', input, wasm, zkey, proofPath, publicPath]);
-      }
-    } catch {
-      await snarkCmd('npx', ['snarkjs', 'groth16', 'fullprove', input, wasm, zkey, proofPath, publicPath]);
-    }
-
-    const proof = JSON.parse(fs.readFileSync(proofPath, 'utf8'));
-    const publicSignals = JSON.parse(fs.readFileSync(publicPath, 'utf8'));
-    const a = [proof.pi_a[0], proof.pi_a[1]];
-    const b = [[proof.pi_b[0][1], proof.pi_b[0][0]], [proof.pi_b[1][1], proof.pi_b[1][0]]];
-    const c = [proof.pi_c[0], proof.pi_c[1]];
-
-    res.json({ useBinding, proof: { a, b, c }, publicSignals });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
-
 // Removed Groth16 endpoints; attestation/registry path only
 
 // JOLT attestation: sign proofHash with PRIVATE_KEY, verify on-chain via AttestedJoltVerifier
@@ -296,60 +221,6 @@ app.post('/api/jolt/verify-onchain', async (req, res) => {
 });
 
 // Store verification on-chain (Arc Testnet) - creates permanent record
-app.post('/api/groth16/store', async (req, res) => {
-  try {
-    const { a, b, c, publicSignals } = req.body || {};
-    if (!a || !b || !c || !publicSignals) return res.status(400).json({ error: 'missing proof params' });
-
-    const pk = process.env.PRIVATE_KEY;
-    if (!pk) return res.status(400).json({ error: 'PRIVATE_KEY required for on-chain storage' });
-
-    const arcRpc = process.env.ARC_RPC_URL || process.env.OOAK_RPC_URL || 'https://rpc.testnet.arc.network';
-    const provider = new ethers.JsonRpcProvider(arcRpc, { chainId: Number(process.env.ARC_CHAIN_ID || 5042002), name: 'arc-testnet' });
-    const wallet = new ethers.Wallet(pk, provider);
-
-    // ProofStorage contract address on Arc (set via env)
-    const storageAddress = process.env.ARC_STORAGE_ADDRESS;
-    if (!storageAddress) return res.status(400).json({ error: 'ARC_STORAGE_ADDRESS required for storage' });
-
-    // ProofStorage contract ABI
-    const storageAbi = [
-      'function storeVerification(bytes32 proofHash, uint256 decision, uint256 confidence) external returns (bool)',
-      'event ProofStored(bytes32 indexed proofHash, uint256 decision, uint256 confidence, address indexed submitter, uint256 timestamp)'
-    ];
-
-    // Create hash of the proof
-    const proofData = JSON.stringify({ a, b, c, publicSignals });
-    const proofHash = ethers.keccak256(ethers.toUtf8Bytes(proofData));
-
-    // Extract decision and confidence from public signals
-    // For JOLT proofs, decision is usually first signal, confidence is second
-    const decision = publicSignals[0] || '1';
-    const confidence = publicSignals[1] || '99';
-
-    // Call the deployed storage contract
-    const contract = new ethers.Contract(storageAddress, storageAbi, wallet);
-    const tx = await contract.storeVerification(proofHash, decision, confidence);
-
-    console.log('Storage tx sent:', tx.hash);
-    const receipt = await tx.wait();
-    console.log('Storage tx confirmed:', receipt.hash);
-
-    res.json({
-      stored: true,
-      txHash: receipt.hash,
-      explorer: `https://testnet.arcscan.app/tx/${receipt.hash}`,
-      proofHash,
-      network: 'arc-testnet',
-      from: wallet.address,
-      contract: storageAddress,
-      decision,
-      confidence
-    });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
 
 // ONNX inference (real) helper
 async function inferONNX(amount, risk) {

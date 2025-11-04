@@ -31,7 +31,7 @@
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <h1>Secure AI Tools for Blockchain</h1>
-        <p>JOLT zkML → Groth16 proof‑of‑proof → On‑chain verify</p>
+        <p>JOLT zkML → ECDSA attestation → Arc CommitmentRegistry</p>
       </div>
     </header>
     <main class="container">
@@ -58,13 +58,13 @@
         <h2>How This Demo Works</h2>
         <p>
           This single‑file UI calls a local API to run a proof‑gated approval flow. It can generate an off‑chain zkML proof (JOLT‑Atlas)
-          and an on‑chain‑verifiable Groth16 “proof‑of‑proof” that binds the model’s decision.
+          and an ECDSA-attested commitment that binds the zkML proof hash.
         </p>
         <ul>
           <li><b>Inputs</b>: Provide <i>amount</i> and <i>risk</i>. The server derives a <i>decision</i> and <i>confidence</i>.</li>
           <li><b>zkML (JOLT‑Atlas)</b>: If available, the server runs the real prover and returns a commitment <code>proofHash</code> to the zkML proof bytes.</li>
-          <li><b>Groth16 proof‑of‑proof</b>: Proves <code>[decision, confidence]</code> (and optionally <code>proofHash</code>) so a verifier contract can check them.</li>
-          <li><b>On‑chain verify</b>: Read‑only contract call returns true/false for the Groth16 proof.</li>
+          <li><b>Attestation</b>: ECDSA signature over <code>proofHash</code> from trusted service, anchored via CommitmentRegistry (EIP-712).</li>
+          <li><b>On‑chain anchoring</b>: Commitment stored on Arc via CommitmentRegistry for audit trail.</li>
           <li><b>Approval</b>: The JSON you see is the “approval envelope” you would pass to a secure action.</li>
         </ul>
       </section>
@@ -77,7 +77,7 @@
         </p>
         <ul>
           <li><b>Gate</b>: A secure tool executes only with a valid approval envelope.</li>
-          <li><b>Verify</b>: Manager verifies zkML (off‑chain) and Groth16 (on‑chain) before issuing a workflow id.</li>
+          <li><b>Verify</b>: Manager verifies attestation (ECDSA signature) before issuing a workflow id.</li>
           <li><b>Pin</b>: Enforce specific model versions and input commitments for auditability and privacy.</li>
           <li><b>Audit</b>: On‑chain verification and proof hashes create a portable, tamper‑evident record.</li>
         </ul>

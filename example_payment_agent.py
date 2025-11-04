@@ -26,7 +26,7 @@ class PaymentAgent:
         # In production, this would call Circle APIs/SDKs or chain directly.
         # Here we simulate the transfer and surface the zk artifacts for downstream logging.
         print(f"[secure_tool] ZK gate passed: decision={_zk_artifacts['decision']} confidence={_zk_artifacts['confidence']}%")
-        print(f"[secure_tool] Groth16 calldata: a={_zk_artifacts['groth16']['a']} ...")
+        print(f"[secure_tool] JOLT proof hash: {_zk_artifacts.get('jolt', {}).get('proof_hash', 'N/A')[:16]}...")
         if _zk_artifacts.get("jolt"):
             print(f"[secure_tool] JOLT proof hash: {_zk_artifacts['jolt']['proof_hash']}")
         print(f"Sending {amount} USDC from {sender} to {receiver} ...")

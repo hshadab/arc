@@ -71,7 +71,7 @@ def run_inference(features: Dict[str, Any]) -> InferenceResult:
     y = np.asarray(outputs[0]).flatten()
     score = float(y[0]) if len(y) > 0 else 0.0
 
-    # Map score to decision/confidence for the Groth16 circuit
+    # Map score to decision/confidence for the approval workflow
     decision = 1 if score >= 0.5 else 0
     confidence = int(max(0, min(100, round(abs(score - 0.5) * 200))))
 

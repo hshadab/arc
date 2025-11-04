@@ -33,7 +33,7 @@ def secure_tool(features_fn: Callable[[tuple, dict], Dict[str, Any]], require_zk
             kwargs["_zk_artifacts"] = {
                 "decision": result.decision,
                 "confidence": result.confidence,
-                "groth16": result.groth16,
+                
                 "jolt": result.jolt,
             }
             return func(*args, **kwargs)

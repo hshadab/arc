@@ -32,7 +32,7 @@ def _bin_exists(path: str) -> bool:
 def generate_llm_proof(decision: int, confidence: int) -> Optional[JoltProof]:
     """Call the JOLT-Atlas `llm_prover` if available to produce a proof artifact.
 
-    Returns None if the binary is unavailable, but the Groth16 path can still proceed.
+    Returns None if the binary is unavailable (attestation path continues).
     """
     if not _bin_exists(JOLT_PROVER_BIN):
         return None
