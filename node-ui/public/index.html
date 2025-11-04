@@ -670,13 +670,13 @@
               </div>
               <div class="secure-tool-item purple" id="secure-item-1b">
                 <div class="secure-tool-item-number">Approval Hook 2/3</div>
-                <div class="secure-tool-item-title">NovaNet Spending Proof Generation</div>
-                <div class="secure-tool-item-desc" id="zkml-proof-desc"><a href="https://github.com/ICME-Lab/jolt-atlas" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">JOLT-Atlas zkML</a> inference proof (x402 service)</div>
+                <div class="secure-tool-item-title">Generate zkML Proof</div>
+                <div class="secure-tool-item-desc" id="zkml-proof-desc"><a href="https://github.com/ICME-Lab/jolt-atlas" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">JOLT-Atlas</a> creates cryptographic proof (~600-800ms, paid via x402: $0.003 USDC)</div>
               </div>
               <div class="secure-tool-item purple" id="secure-item-2">
                 <div class="secure-tool-item-number">Approval Hook 3/3</div>
-                <div class="secure-tool-item-title">Proof Attestation on Arc</div>
-                <div class="secure-tool-item-desc" id="zkml-verify-desc">Commitment attested and registered <span id="arc-blockchain-link">on Arc blockchain</span></div>
+                <div class="secure-tool-item-title">Attest Generated Proof</div>
+                <div class="secure-tool-item-desc" id="zkml-verify-desc">ECDSA sign proofHash and anchor commitment <span id="arc-blockchain-link">on Arc blockchain</span></div>
               </div>
               <div class="secure-tool-item" id="secure-item-3">
                 <div class="secure-tool-item-number">Tool Execution</div>
@@ -1021,7 +1021,7 @@
           updateSecureItem('1b', 'active');
           await new Promise(r => setTimeout(r, 3000)); // Longer wait for proof generation
           updateSecureItem('1b', 'success');
-          await new Promise(r => setTimeout(r, 300));
+          await new Promise(r => setTimeout(r, 800)); // Pause to show proof generation completed
 
           // Step 5: @secure_tool - Item 2 (Attested Commitment on Arc)
           updateSecureItem(2, 'active');
