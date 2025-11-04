@@ -59,7 +59,7 @@ Open: http://localhost:8616
 Click: "▶ Initiate User Request"
 Watch: Real-time workflow visualization with payment tracking
 
-⏱️  Note: Real zkML proofs take ~10-15 seconds
+⏱️  Note: Real zkML proofs take ~600-800ms
     See ONNX_MODEL_COMPATIBILITY.md for model details
 ```
 
@@ -75,7 +75,7 @@ WalletInstanceAgent (0x1f40...0CC6)
     │
     ├─ Approval Hook 1/3: ONNX Authorization (~5ms)
     │
-    ├─ Approval Hook 2/3: NovaNet zkML Proof (~3-9s, paid via x402)
+    ├─ Approval Hook 2/3: NovaNet zkML Proof (~600-800ms, paid via x402)
     │   └─ Cost: 0.003 USDC via HTTP 402 Payment Required
     │
     └─ Approval Hook 3/3: Commitment on Arc (~2-3s)
@@ -97,7 +97,7 @@ Tool Execution: send_usdc(wfid=approved)
 **NovaNet zkML**
 - JOLT-Atlas proof generation for ONNX inference (percentage_limit model, 1KB)
 - Cryptographic guarantee that AI model actually executed
-- **Real zkML proofs enabled by default** (~10-15 seconds per proof)
+- **Real zkML proofs enabled by default** (~600-800ms per proof)
 - Fast-mode extraction skips verification to save time
 - Uses zkx402 enhanced fork with Division and Comparison operations
 
