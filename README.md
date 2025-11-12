@@ -1,4 +1,4 @@
-Trustless USDC Agents: Extending Object Oriented Agent Kit with zkML
+# Trustless USDC Agents: Extending Object Oriented Agent Kit with zkML
 
 ## Overview
 
@@ -10,86 +10,261 @@ This integration extends Circle's **Object Oriented Agent Kit (OOAK)** with **zk
 
 This positioning makes OOAK + zkML a **general-purpose trustless agent framework** that can be applied to any agent SDK (not just OpenAI), enabling Circle's core goal: secure, verifiable USDC transfers via autonomous agents.
 
-**What's Proven:**
-- Real ONNX inference using `onnxruntime`
+## What's Proven
+
+- Real ONNX inference using `onnxruntime-node`
 - zkML proof-of-execution via JOLT-Atlas fork (returns proofHash)
 - ECDSA attestation of proofHash (service signs)
 - On-chain anchoring via CommitmentRegistry (EIP‑712) and optional AttestedJoltVerifier verify
 - OOAK-style approval gate that requires valid attestation/anchoring before executing secure actions
 
+## Architecture
+
+```
+User Request
+    ↓
+ONNX Model Inference (onnxruntime-node)
+    ↓
+JOLT-Atlas zkML Proof (~600-800ms)
+    ↓
+ECDSA Attestation (EIP-191)
+    ↓
+On-Chain Anchoring (EIP-712 CommitmentRegistry)
+    ↓
+Approval Decision
+```
+
 ## What's Included
 
-- `ml/onnx_infer.py`: Loads a pinned ONNX model and runs inference. If the demo model is missing, it auto-generates a tiny classifier.
-- `zk/jolt_prover.py`: Wraps JOLT-Atlas binaries to produce a proof object and a `proof_hash` commitment.
-- `onchain/attestation.py`: Verifies ECDSA attestation of JOLT proof hash (3-tier verification).
-- `workflow.py`: An OOAK-style `ZKWorkflowManager` that enforces proof-gated approvals.
-- `demo.py`: End-to-end demonstration: ONNX → JOLT proof → attestation → approval.
-- `secure_tooling.py`: Minimal `@secure_tool`-style decorator that enforces the ZK gate.
-- `example_payment_agent.py`: A payment tool (`send_usdc`) gated by the ZK approval pipeline.
-- `node-ui/` (Express): UI + REST API with ONNX inference, zkML (JOLT) + attestation + registry anchoring, and `send-usdc`.
+This repository contains:
+
+- **`node-ui/`** - Main demo application (Express server + Web UI)
+  - REST API endpoints for zkML proof generation
+  - ONNX inference with multiple pre-trained models
+  - JOLT-Atlas integration for proof generation
+  - EIP-712 commitment anchoring
+  - Web-based UI for testing approvals
+
+- **`ooak/`** - OOAK-specific implementations and utilities
+
+- **`circle-gateway/`** - Circle Gateway integration for USDC transfers
+
+- **`ui/`** - Additional UI components
+
+- **`zkml/`** - zkML tooling and utilities
 
 ## Prerequisites
 
-- Python 3.10+
-- Node.js 18+
-- Environment variables (or defaults):
-  - `OOAK_ONNX_MODEL`: defaults to a demo ONNX model
-  - `OOAK_RPC_URL`: JSON-RPC endpoint (default: Arc testnet)
+- **Node.js**: 18.0.0 or higher
+- **npm**: For package management
+- Environment variables (see `.env.example`):
+  - `PRIVATE_KEY`: Wallet private key (testnet only!)
+  - `ARC_RPC_URL`: Arc blockchain RPC endpoint
+  - `OOAK_ONNX_MODEL`: Path to ONNX model (optional, defaults provided)
 
-## Quickstart
+## Quick Start
 
-### 1) Install Dependencies
-
-```bash
-pip install onnxruntime web3
-```
-
-### 2) Run the Demo
+### 1. Clone and Install
 
 ```bash
-python demo.py
+git clone https://github.com/hshadab/arc.git
+cd arc/node-ui
+npm install
 ```
 
-### 3) Run the Secure-Tool Payments Example
+### 2. Configure Environment
 
 ```bash
-python example_payment_agent.py
+# Copy the example configuration
+cp .env.example .env
+
+# Edit .env with your testnet private key
+# IMPORTANT: Use testnet keys only! Never use mainnet keys.
+nano .env
 ```
 
-### 4) Launch the Node UI
+Required variables:
+```env
+PRIVATE_KEY=0x...                              # Your testnet private key
+ARC_RPC_URL=https://rpc.testnet.arc.network   # Arc testnet RPC
+```
+
+### 3. Start the Server
 
 ```bash
-npm run demo:ooak:ui
+npm start
 ```
 
-Open http://localhost:8616
+The server will start on `http://localhost:8616`
 
-- Approval runs ONNX → zkML (JOLT) → attestation/anchoring on Arc
-- Results show the JOLT proofHash, attestation, and commitment tx link
+### 4. Open the UI
 
-### 5) Real Mode (Optional)
+Open your browser to: **http://localhost:8616**
 
-- **ONNX**: Ensure a model exists at the configured path, and keep `onnxruntime-node` installed.
-- **JOLT zkML**: Set `JOLT_PROVER_BIN` to your JOLT-Atlas binary path (build via `cargo build --release`).
-- **Attestation verify**: Set `ARC_JOLT_VERIFIER_ADDRESS` to on-chain ECDSA verifier and `ARC_JOLT_ATTESTOR` to expected signer.
-- **Send USDC**:
-  - Path A (Circle DCW API): export `CIRCLE_API_KEY` and optional wallet vars, then POST `/api/send-usdc`.
-  - Path B (private key on Arc): export `PRIVATE_KEY`, optional `ARC_RPC_URL`, `USDC_ADDRESS`. The server signs and sends ERC‑20 `transfer`.
+The UI provides:
+- zkML proof generation interface
+- Real-time approval decisions
+- ONNX model inference visualization
+- Attestation and commitment tracking
 
-This will:
-- Ensure the ONNX model exists (generate if needed).
-- Run real ONNX inference to produce a decision + confidence.
-- Generate a zkML proof, compute `proofHash`, sign it, and anchor a commitment on Arc.
+## Testing the API
+
+### Approval Endpoint
+
+```bash
+curl -X POST http://localhost:8616/api/approve \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 100,
+    "limit": 1000,
+    "confidence": 85,
+    "timestamp": 1699999999
+  }'
+```
+
+**Response:**
+```json
+{
+  "decision": 1,
+  "confidence": 95,
+  "jolt": null,
+  "onchain_verified": false,
+  "commit": null,
+  "x402Payment": null
+}
+```
+
+## Available ONNX Models
+
+The demo includes several pre-trained ONNX models:
+
+- `network.onnx` - Network decision model
+- `addsubmul0.onnx` - Simple arithmetic operations
+- `crypto_sentiment.onnx` - Cryptocurrency sentiment analysis
+- `sentiment0.onnx` - General sentiment classifier
+- `medium_text_classification.onnx` - Text classification
+- `sigmoid.onnx` - Sigmoid activation model
+- `simple_text_classification.onnx` - Simple text classifier
+
+Models are located in: `node-ui/models/`
+
+## Configuration Options
+
+### Environment Variables
+
+```env
+# Blockchain Configuration
+ARC_RPC_URL=https://rpc.testnet.arc.network
+ARC_CHAIN_ID=5042002
+PRIVATE_KEY=0x...
+
+# OOAK Contracts (Arc Testnet)
+COMMITMENT_REGISTRY_ADDRESS=0x8d65d93022EB39c1b66c72A7F55C63c0C28B4E12
+SPEND_GATE_ADDRESS=0x3D7Ce2Cc674149d8448B1014f34fc2B3b76e18E7
+ARC_STORAGE_ADDRESS=0x3fC2FA74e89445544Adeca563abb918402E5a829
+ARC_JOLT_VERIFIER_ADDRESS=0x7c635F575Fde6ccD2E800F1ceAB51daD2d225093
+
+# zkML Configuration
+JOLT_ENABLED=true
+OOAK_ONNX_MODEL=./models/network.onnx
+
+# UI Configuration
+OOAK_UI_PORT=8616
+```
+
+## Real Mode (Production-Like)
+
+For production-like behavior:
+
+1. **ONNX Models**: Ensure model exists at the configured path with `onnxruntime-node` installed
+2. **JOLT zkML**: Set `JOLT_PROVER_BIN` to your JOLT-Atlas binary path (build via `cargo build --release`)
+3. **Attestation**: Set `ARC_JOLT_VERIFIER_ADDRESS` to on-chain ECDSA verifier and `ARC_JOLT_ATTESTOR` to expected signer
+4. **USDC Transfers**:
+   - **Path A** (Circle DCW API): Export `CIRCLE_API_KEY` and wallet vars, then POST `/api/send-usdc`
+   - **Path B** (Direct): Export `PRIVATE_KEY`, `ARC_RPC_URL`, `USDC_ADDRESS` for ERC-20 `transfer`
+
+## Attestation Workflow
+
+The default workflow uses **attested proofs**:
+
+1. Generate ONNX inference output
+2. Create zkML proof via JOLT-Atlas
+3. Sign `proofHash` with EIP-191 (service wallet)
+4. Verify signature off-chain
+5. (Optional) Verify on-chain via `AttestedJoltVerifier`
+6. Anchor commitment via `CommitmentRegistry.store` (EIP-712)
+
+## Project Structure
+
+```
+arc/
+├── node-ui/              # Main demo application
+│   ├── server.cjs        # Express server
+│   ├── zkml-proof-service.cjs
+│   ├── x402-*.cjs        # x402 integration
+│   ├── models/           # ONNX models
+│   ├── public/           # Web UI
+│   └── contracts/        # Contract ABIs
+├── ooak/                 # OOAK implementations
+├── circle-gateway/       # Circle Gateway integration
+├── ui/                   # Additional UI components
+├── zkml/                 # zkML utilities
+├── LICENSE               # MIT License
+├── SECURITY.md           # Security guidelines
+├── CONTRIBUTING.md       # Contribution guide
+└── README.md             # This file
+```
+
+## Security
+
+⚠️ **IMPORTANT**: Read [SECURITY.md](./SECURITY.md) before using this project.
+
+Key security considerations:
+- Use **testnet keys only** for development
+- Never commit private keys or API keys
+- Smart contracts are **not audited** - prototype only
+- Not recommended for production without security audit
+- See [SECURITY.md](./SECURITY.md) for full guidelines
+
+## Documentation
+
+- **[SECURITY.md](./SECURITY.md)** - Security guidelines and warnings
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - How to contribute
+- **[node-ui/README.md](./node-ui/README.md)** - Detailed node-ui documentation
+- **[node-ui/ZKML_SETUP.md](./node-ui/ZKML_SETUP.md)** - zkML setup guide
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+
+This is a research prototype for demonstrating zkML + OOAK integration. Focus on:
+- zkML proof generation improvements
+- ONNX model optimizations
+- UI/UX enhancements
+- Documentation improvements
 
 ## Notes
 
-- The JOLT-Atlas binary can be used when present; its output is hashed and bound (proofHash) into the audit record. The active path uses ECDSA attestation + CommitmentRegistry anchoring.
-- Contract address and RPC can be set via env vars. Defaults point to public endpoints and a demo address used in this repo's JS backends.
-- The UI's hero and diagram sections embed imagery from Circle's blog post for visual parity.
-- The Node API enables CORS so you can use the single‑file UI at `ooak-ui.html` with `API Base URL` set to your server.
+- The JOLT-Atlas binary can be used when present; its output is hashed and bound (proofHash) into the audit record
+- Contract addresses and RPC can be set via environment variables
+- The UI enables CORS for standalone HTML usage at `ooak-ui.html`
+- Proof generation typically takes 600-800ms with the JOLT-Atlas fork
 
-## Attested Variant (Default)
+## Resources
 
-- Sign `proofHash` (EIP‑191) with the prover/service wallet
-- Verify signature off-chain and (optionally) on-chain via `AttestedJoltVerifier`
-- Anchor commitment via `CommitmentRegistry.store` (EIP‑712 typed data)
+- **Arc Blockchain**: https://arc.network
+- **Circle OOAK**: https://www.circle.com/
+- **JOLT-Atlas**: https://github.com/ICME-Lab/zkml_jolt
+- **ONNX Runtime**: https://onnxruntime.ai
+
+## License
+
+MIT License - See [LICENSE](./LICENSE)
+
+---
+
+**Status**: 🚧 Prototype - Not Production Ready
+
+This is a research prototype demonstrating zkML integration with OOAK. Use testnet only. Not audited for production use.
+
+**Last Updated**: 2025-11-12
