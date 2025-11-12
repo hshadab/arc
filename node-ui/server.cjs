@@ -257,7 +257,7 @@ async function inferONNX(amount, risk) {
   return { decision, confidence, score: Number(risk) };
 }
 
-// Orchestrated approval: ONNX → zkML → Attestation
+// Orchestrated approval: ONNX → zkML → Attestation (MANDATORY FLOW)
 app.post('/api/approve', async (req, res) => {
   try {
     const { amount = 25.0, risk = 0.05, useX402 = true } = req.body || {};
@@ -267,70 +267,91 @@ app.post('/api/approve', async (req, res) => {
     let jolt = null;
     let x402Payment = null;
 
-    if (USE_JOLT_ATTEST || COMMITMENT_REGISTRY_ADDRESS) {
-      // JOLT zkML proof + hash (required under binding or attestation path)
+    // STEP 3: zkML Proof Generation (MANDATORY)
+    console.log('[approve] Step 3: Generating zkML proof (MANDATORY)');
 
-      if (useX402) {
-        // Use x402 paid zkML service
-        try {
-          console.log('[x402] Requesting paid zkML proof...');
-          const proofResult = await x402Client.request('http://localhost:9300/prove', {
-            method: 'POST',
-            body: { decision, confidence }
-          });
+    if (useX402) {
+      // Use x402 paid zkML service
+      try {
+        console.log('[x402] Requesting paid zkML proof...');
+        const proofResult = await x402Client.request('http://localhost:9300/prove', {
+          method: 'POST',
+          body: { decision, confidence }
+        });
 
-          jolt = {
-            joltPresent: true,
-            decision: proofResult.proof.decision,
-            confidence: proofResult.proof.confidence,
-            proofHashHex: proofResult.proof.hash,
-            proofHashF: proofResult.proof.hash, // Use same for now
-            raw: proofResult.proof.metadata
-          };
+        jolt = {
+          joltPresent: true,
+          decision: proofResult.proof.decision,
+          confidence: proofResult.proof.confidence,
+          proofHashHex: proofResult.proof.hash,
+          proofHashF: proofResult.proof.hash, // Use same for now
+          raw: proofResult.proof.metadata
+        };
 
-          x402Payment = {
-            cost: proofResult.service.cost,
-            txHash: proofResult.payment.txHash,
-            from: proofResult.payment.from,
-            timestamp: proofResult.payment.timestamp,
-            explorer: `https://testnet.arcscan.app/tx/${proofResult.payment.txHash}`
-          };
+        x402Payment = {
+          cost: proofResult.service.cost,
+          txHash: proofResult.payment.txHash,
+          from: proofResult.payment.from,
+          timestamp: proofResult.payment.timestamp,
+          explorer: `https://testnet.arcscan.app/tx/${proofResult.payment.txHash}`
+        };
 
-          console.log('[x402] Proof received. Payment TX:', x402Payment.txHash);
-        } catch (error) {
-          console.error('[x402] Failed, falling back to local:', error.message);
-          // Fallback to local proof generation
-          jolt = await fetchJson('POST', '/api/zkml/prove', { decision, confidence });
-        }
-      } else {
-        // Use local zkML proof generation (free)
+        console.log('[x402] Proof received. Payment TX:', x402Payment.txHash);
+      } catch (error) {
+        console.error('[x402] Failed, falling back to local:', error.message);
+        // Fallback to local proof generation
         jolt = await fetchJson('POST', '/api/zkml/prove', { decision, confidence });
       }
+    } else {
+      // Use local zkML proof generation (free)
+      jolt = await fetchJson('POST', '/api/zkml/prove', { decision, confidence });
     }
 
-    let v = { verified: false };
-    console.log('[approve] USE_JOLT_ATTEST:', USE_JOLT_ATTEST, 'COMMITMENT_REGISTRY_ADDRESS:', COMMITMENT_REGISTRY_ADDRESS);
-    if (USE_JOLT_ATTEST && ARC_JOLT_VERIFIER_ADDRESS) {
-      // Direct on-chain verify via ECDSA attestation of JOLT proof hash
-      console.log('[approve] Using JOLT attestation path');
-      if (!ARC_JOLT_VERIFIER_ADDRESS) return res.status(400).json({ error: 'missing_arc_jolt_verifier', message: 'Set ARC_JOLT_VERIFIER_ADDRESS to AttestedJoltVerifier' });
-      const attest = await fetchJson('POST', '/api/jolt/attest', { proofHashHex: jolt.proofHashHex });
-      const verify = await fetchJson('POST', '/api/jolt/verify-onchain', { proofHashHex: jolt.proofHashHex, signature: attest.signature });
-      v = { verified: verify.verified, verifier: verify.contract, network: 'arc-testnet' };
-    } else if (COMMITMENT_REGISTRY_ADDRESS) {
-      // Add delay to avoid rate limits
-      console.log('[approve] Using commitment registry path');
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Increased to 2s to respect rate limits
-      const commit = await fetchJson('POST', '/api/commit/store', { amount, decision, confidence, proofHashHex: jolt?.proofHashHex });
-      console.log('[approve] Commit response:', commit);
-      v = {
-        verified: commit.stored === true,
-        registry: commit.registry,
-        commitId: commit.commitId,
-        blockNumber: commit.blockNumber,
-        blockTimestamp: commit.blockTimestamp,
-        explorerLink: commit.explorer
-      };
+    // Verify proof was generated
+    if (!jolt || !jolt.proofHashHex) {
+      return res.status(500).json({
+        error: 'zkml_proof_required',
+        message: 'zkML proof generation is mandatory but failed'
+      });
+    }
+    console.log('[approve] ✓ zkML proof generated:', jolt.proofHashHex);
+
+    // STEP 5: On-Chain Anchoring (MANDATORY)
+    console.log('[approve] Step 5: Anchoring commitment on-chain (MANDATORY)');
+
+    if (!COMMITMENT_REGISTRY_ADDRESS) {
+      return res.status(500).json({
+        error: 'commitment_registry_required',
+        message: 'COMMITMENT_REGISTRY_ADDRESS must be set for on-chain anchoring'
+      });
+    }
+
+    // Add delay to avoid rate limits
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const commit = await fetchJson('POST', '/api/commit/store', {
+      amount,
+      decision,
+      confidence,
+      proofHashHex: jolt.proofHashHex
+    });
+
+    if (!commit || !commit.stored) {
+      return res.status(500).json({
+        error: 'commitment_anchoring_failed',
+        message: 'On-chain commitment anchoring is mandatory but failed',
+        details: commit
+      });
+    }
+
+    console.log('[approve] ✓ Commitment anchored on-chain. TX:', commit.transactionHash);
+
+    const v = {
+      verified: true,
+      registry: commit.registry,
+      commitId: commit.commitId,
+      blockNumber: commit.blockNumber,
+      blockTimestamp: commit.blockTimestamp,
+      explorerLink: commit.explorer
     }
 
     res.json({
