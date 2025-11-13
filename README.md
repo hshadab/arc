@@ -50,8 +50,6 @@ This repository contains:
 
 - **`zkml/`** - zkML tooling and utilities
 
-- **`ooak-ui.html`** - Standalone single-file demo UI
-
 ## Prerequisites
 
 - **Node.js**: 18.0.0 or higher
@@ -245,7 +243,6 @@ arc/
 │   └── contracts/        # Contract ABIs
 ├── ooak/                 # OOAK implementations and utilities
 ├── zkml/                 # zkML tooling
-├── ooak-ui.html          # Standalone single-file demo
 ├── .env.example          # Configuration template
 ├── LICENSE               # MIT License
 ├── SECURITY.md           # Security guidelines
@@ -288,7 +285,7 @@ This is a research prototype for demonstrating zkML + OOAK integration. Focus on
 - Contract addresses and RPC endpoints are configured via environment variables
 - Native USDC is used for gas and transfers (Arc's native token)
 - USDC precompile at `0x3600000000000000000000000000000000000000` enables ERC20 compatibility
-- The UI enables CORS for standalone HTML usage at `ooak-ui.html`
+- Web UI is served from `node-ui/public/` at `http://localhost:8616`
 
 ## Resources
 
