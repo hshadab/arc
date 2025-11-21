@@ -8,12 +8,18 @@ These demos use [JOLT-Atlas](https://github.com/ICME-Lab/jolt-atlas) to generate
 
 ## Demos
 
-| Demo | Description | Circle Product | Port |
+| Demo | What it Does | Circle Product | Port |
 |------|-------------|----------------|------|
-| [OOAK Agents](demos/ooak-agents/) | Trustless USDC payment agents | Object Oriented Agent Kit | 8616 |
-| [Cross-Chain Gateway](demos/gateway-compliance/) | zkML-authorized cross-chain USDC transfers | [Gateway](https://www.circle.com/gateway) | 8617 |
-| [Programmable Wallets](demos/programmable-wallets/) | Authorized wallet operations | [Wallets](https://developers.circle.com/wallets) | 8618 |
-| [Autonomous Settlement](demos/autonomous-settlement/) | **Compliant AI agent for agentic commerce** | [Compliance Engine](https://www.circle.com/wallets/compliance-engine) | 8619 |
+| [OOAK Agents](demos/ooak-agents/) | Trustless USDC payment agents with zkML authorization | Object Oriented Agent Kit | 8616 |
+| [Cross-Chain Gateway](demos/gateway-compliance/) | Instant cross-chain USDC transfers (<500ms) with zkML authorization | [**Gateway**](https://www.circle.com/gateway) - Cross-chain liquidity | 8617 |
+| [Programmable Wallets](demos/programmable-wallets/) | Wallet operations with zkML authorization | [**Wallets**](https://developers.circle.com/wallets) - Developer-controlled wallets | 8618 |
+| [**Autonomous Settlement**](demos/autonomous-settlement/) | **Compliant AI agent for agentic commerce** | [**Compliance Engine**](https://www.circle.com/wallets/compliance-engine) - AML/CFT screening | 8619 |
+
+### Circle Product Summary
+
+- **Gateway**: Unified USDC balance across chains, instant cross-chain transfers
+- **Compliance Engine**: AML/CFT screening, sanctions checks, transaction monitoring
+- **Programmable Wallets**: Developer-controlled wallets via API
 
 ## Architecture
 
