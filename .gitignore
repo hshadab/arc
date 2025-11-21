@@ -47,6 +47,10 @@ dist/
 build/
 *.egg-info/
 
+# Rust/Cargo
+jolt-atlas/target/
+*.srs
+
 # Temporary files
 *.tmp
 .cache/

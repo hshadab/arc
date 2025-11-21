@@ -1,0 +1,15 @@
+{
+  "name": "autonomous-settlement-demo",
+  "version": "1.0.0",
+  "description": "Compliant autonomous agent for settlement on Arc - showcasing agentic commerce with zkML proofs",
+  "main": "server.cjs",
+  "scripts": {
+    "start": "node server.cjs",
+    "dev": "node --watch server.cjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.4",
+    "express": "^4.21.1"
+  }
+}

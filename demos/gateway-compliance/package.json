@@ -1,0 +1,15 @@
+{
+  "name": "gateway-compliance-demo",
+  "version": "1.0.0",
+  "description": "zkML compliance agent for Circle Gateway cross-chain payments",
+  "main": "server.cjs",
+  "scripts": {
+    "start": "node server.cjs",
+    "dev": "node --watch server.cjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.4",
+    "express": "^4.21.1"
+  }
+}

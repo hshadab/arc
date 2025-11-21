@@ -32,10 +32,11 @@ const x402 = createX402Middleware({
   usdcAddress: '0x3600000000000000000000000000000000000000'
 });
 
-// Config
-const JOLT_PROVER_BIN = process.env.JOLT_PROVER_BIN || '';
+// Config - Updated for latest jolt-atlas
+const JOLT_ATLAS_DIR = process.env.JOLT_ATLAS_DIR || path.resolve(__dirname, '..', 'jolt-atlas');
+const JOLT_PROVER_BIN = process.env.JOLT_PROVER_BIN || path.join(JOLT_ATLAS_DIR, 'target', 'release', 'examples', 'authorization_json');
 const JOLT_MODEL_PATH = process.env.JOLT_MODEL_PATH || '';
-const OOAK_ONNX_MODEL = process.env.OOAK_ONNX_MODEL || '';
+const OOAK_ONNX_MODEL = process.env.OOAK_ONNX_MODEL || path.join(JOLT_ATLAS_DIR, 'onnx-tracer', 'models', 'authorization', 'network.onnx');
 
 function sha256Hex(buf) {
   return crypto.createHash('sha256').update(buf).digest('hex');
@@ -145,195 +146,102 @@ app.post('/prove',
         });
       }
 
-      // Generate real JOLT proof
-      let args = [];
-      let cwd = path.resolve(JOLT_PROVER_BIN, '..', '..');
+      // Generate real JOLT proof using latest jolt-atlas authorization model
+      // The authorization_json binary takes 8 args: budget, trust, amount, category, velocity, day, time, risk
+      // We map decision/confidence to transaction features
+      const budget = decision === 1 ? 15 : 5;  // High budget for approve, low for deny
+      const trust = Math.round(confidence * 7);  // Scale confidence to 0-7 trust level
+      const amount = decision === 1 ? 5 : 12;   // Reasonable amount for approve, excessive for deny
+      const category = 0;  // General category
+      const velocity = 2;  // Normal velocity
+      const day = 1;       // Weekday
+      const time = 1;      // Business hours
+      const risk = 0;      // No special risk flags
 
-      if (path.basename(JOLT_PROVER_BIN) === 'proof_json_output') {
-        // proof_json_output expects: <model_path> <input1> <input2> ...
-        // Using addsubmul0 model (1 input, 14 operations, ~6-7min per proof)
-        // Simple arithmetic model that provides cryptographic proof of computation
-        const inputVal = Math.round(confidence * 10);  // Scale confidence to 0-10
-        args = [JOLT_MODEL_PATH, String(inputVal)];
-        cwd = path.resolve(JOLT_PROVER_BIN, '..');
-      } else {
-        args = [
-          '--prompt-hash', '12345',
-          '--system-rules-hash', '67890',
-          '--approve-confidence', String(confidence),
-          '--decision', String(decision)
-        ];
-      }
+      const args = [
+        String(budget),
+        String(trust),
+        String(amount),
+        String(category),
+        String(velocity),
+        String(day),
+        String(time),
+        String(risk)
+      ];
+      const cwd = JOLT_ATLAS_DIR;
 
       const child = spawn(JOLT_PROVER_BIN, args, { cwd });
       let out = '';
       let err = '';
       let proofReturned = false;
 
-      // Fast mode: Use timeout-based extraction instead of marker detection
-      // After 15 seconds (enough for proving), extract proof and kill verification
-      console.log('[FAST MODE] Setting 15-second timeout for proof extraction...');
-      const fastModeTimeout = setTimeout(() => {
-        if (proofReturned) return; // Already handled
+      // The new authorization_json outputs clean JSON when complete
+      // No fast mode timeout needed - wait for natural completion
+      console.log('[JOLT-ATLAS] Starting proof generation with authorization model...');
+
+      child.stderr.on('data', (d) => { err += d.toString(); });
+      child.stdout.on('data', (d) => { out += d.toString(); });
+
+      // Handle process completion
+      child.on('close', (code) => {
+        if (proofReturned) return;
 
         const duration = Date.now() - startTime;
-        console.log(`[FAST MODE] ${duration}ms elapsed, extracting proof data...`);
+
+        if (code !== 0) {
+          console.error('[ERROR] JOLT prover failed:', err);
+          return res.status(500).json({
+            error: 'Proof generation failed',
+            details: err,
+            paymentReceived: req.payment
+          });
+        }
 
         try {
-          // Parse proof output from whatever we've collected so far
-          let jsonRaw = null;
-          try {
-            jsonRaw = JSON.parse(out.trim());
-          } catch {
-            const start = out.indexOf('===PROOF_START===');
-            const end = out.indexOf('===PROOF_END===');
-            if (start !== -1 && end !== -1) {
-              jsonRaw = JSON.parse(out.slice(start + '===PROOF_START==='.length, end).trim());
-            } else if (out.trim().startsWith('{')) {
-              // Try parsing as JSON object
-              const lines = out.trim().split('\n');
-              for (const line of lines) {
-                try {
-                  const parsed = JSON.parse(line);
-                  if (parsed.proof_bytes || parsed.proof) {
-                    jsonRaw = parsed;
-                    break;
-                  }
-                } catch {}
-              }
-            }
+          // Parse JSON output from authorization_json
+          const jsonRaw = JSON.parse(out.trim());
+
+          if (!jsonRaw.success) {
+            throw new Error('Proof generation returned success=false');
           }
 
-          let proofBytes;
-          if (jsonRaw) {
-            if (Array.isArray(jsonRaw.proof_bytes)) {
-              proofBytes = Buffer.from(jsonRaw.proof_bytes);
-            } else if (typeof jsonRaw.proof === 'string') {
-              proofBytes = Buffer.from(jsonRaw.proof);
-            } else {
-              proofBytes = Buffer.from(JSON.stringify(jsonRaw));
-            }
-          } else {
-            // Fallback: use whatever output we have
-            proofBytes = Buffer.from(out || 'proof_data_placeholder');
-          }
+          const proofHash = jsonRaw.proof_hash || sha256Hex(Buffer.from(out));
 
-          const proofHash = sha256Hex(proofBytes);
-
-          console.log(`[FAST MODE SUCCESS] Proof generated: ${proofHash.substring(0, 16)}... (${duration}ms)`);
-          console.log('[FAST MODE] Killing verification process to save time...');
+          console.log(`[SUCCESS] Proof generated: ${proofHash.substring(0, 16)}... (${duration}ms)`);
+          console.log(`[SUCCESS] Decision: ${jsonRaw.decision}, Confidence: ${jsonRaw.confidence}`);
+          console.log(`[SUCCESS] Prove time: ${jsonRaw.prove_time_ms}ms, Verify time: ${jsonRaw.verify_time_ms}ms`);
 
           proofReturned = true;
-          child.kill('SIGTERM'); // Kill the process to stop verification
-
           res.json({
             success: true,
             proof: {
               hash: proofHash,
-              size: proofBytes.length,
-              decision,
-              confidence,
-              metadata: jsonRaw,
-              fastMode: true,
-              note: 'Proof extracted after generation (~8s), verification skipped'
+              size: jsonRaw.proof_size || out.length,
+              decision: jsonRaw.decision === 'AUTHORIZED' ? 1 : 0,
+              confidence: jsonRaw.confidence,
+              metadata: {
+                model: 'authorization',
+                input_features: jsonRaw.input_features,
+                prove_time_ms: jsonRaw.prove_time_ms,
+                verify_time_ms: jsonRaw.verify_time_ms
+              }
             },
             payment: req.payment,
             service: {
               duration,
               cost: '0.003 USDC',
-              provider: 'zkML Proof Service (Fast Mode)'
+              provider: 'zkML Proof Service (jolt-atlas)'
             },
             timestamp: Date.now()
           });
         } catch (parseError) {
-          console.error('[ERROR] Proof parsing failed in fast mode:', parseError.message);
-          console.log('[ERROR] Output received:', out.substring(0, 200));
-
-          proofReturned = true;
-          child.kill('SIGTERM');
-
-          // Return error response with proper structure
-          return res.status(500).json({
-            error: 'Proof parsing failed in fast mode',
+          console.error('[ERROR] Proof parsing failed:', parseError.message);
+          console.error('[ERROR] Raw output:', out.substring(0, 500));
+          res.status(500).json({
+            error: 'Proof parsing failed',
             details: parseError.message,
             paymentReceived: req.payment
           });
-        }
-      }, 15000); // 15 second timeout for percentage_limit model
-
-      child.stderr.on('data', (d) => { err += d.toString(); });
-      child.stdout.on('data', (d) => { out += d.toString(); });
-
-      // Fallback: if process completes normally (shouldn't happen with fast mode)
-      child.on('close', (code) => {
-        clearTimeout(fastModeTimeout); // Clear the timeout
-        if (proofReturned) return; // Already sent response in fast mode
-
-        const duration = Date.now() - startTime;
-
-        if (code !== 0 && !proofReturned) {
-          console.error('[ERROR] JOLT prover failed:', err);
-          return res.status(500).json({
-            error: 'Proof generation failed',
-            paymentReceived: req.payment
-          });
-        }
-
-        if (!proofReturned) {
-          try {
-            // Parse proof output (full completion path)
-            let jsonRaw = null;
-            try {
-              jsonRaw = JSON.parse(out.trim());
-            } catch {
-              const start = out.indexOf('===PROOF_START===');
-              const end = out.indexOf('===PROOF_END===');
-              if (start !== -1 && end !== -1) {
-                jsonRaw = JSON.parse(out.slice(start + '===PROOF_START==='.length, end).trim());
-              }
-            }
-
-            let proofBytes;
-            if (jsonRaw) {
-              if (Array.isArray(jsonRaw.proof_bytes)) {
-                proofBytes = Buffer.from(jsonRaw.proof_bytes);
-              } else if (typeof jsonRaw.proof === 'string') {
-                proofBytes = Buffer.from(jsonRaw.proof);
-              } else {
-                proofBytes = Buffer.from(JSON.stringify(jsonRaw));
-              }
-            } else {
-              proofBytes = Buffer.from(out);
-            }
-
-            const proofHash = sha256Hex(proofBytes);
-
-            console.log(`[SUCCESS] Proof completed with verification: ${proofHash.substring(0, 16)}... (${duration}ms)`);
-
-            res.json({
-              success: true,
-              proof: {
-                hash: proofHash,
-                size: proofBytes.length,
-                decision,
-                confidence,
-                metadata: jsonRaw
-              },
-              payment: req.payment,
-              service: {
-                duration,
-                cost: '0.003 USDC',
-                provider: 'zkML Proof Service'
-              },
-              timestamp: Date.now()
-            });
-          } catch (parseError) {
-            console.error('[ERROR] Proof parsing failed:', parseError);
-            res.status(500).json({
-              error: 'Proof parsing failed',
-              paymentReceived: req.payment
-            });
-          }
         }
       });
     } catch (error) {
