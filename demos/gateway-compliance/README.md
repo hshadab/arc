@@ -1,31 +1,33 @@
-# Gateway Compliance Demo
+# Cross-Chain Gateway Demo
 
-zkML-powered compliance agent for Circle Gateway cross-chain payments on Arc.
+zkML-authorized agent for Circle Gateway cross-chain USDC transfers on Arc.
 
 ## Overview
 
-This demo shows how to use zkML proofs to authorize a compliance agent that uses [Circle Gateway](https://www.circle.com/gateway) to send cross-chain USDC payments. The agent proves it evaluated compliance rules before authorizing transfers.
+This demo shows how to use zkML proofs to **authorize an agent** that uses [Circle Gateway](https://www.circle.com/gateway) for instant cross-chain USDC transfers (<500ms). The zkML proof attests the agent is authorized to use Gateway—this is separate from Circle's Compliance Engine product which handles AML/CFT screening.
+
+**Note**: For AML/CFT compliance screening, see the [Autonomous Settlement](../autonomous-settlement/) demo which uses Circle's Compliance Engine.
 
 ## Architecture
 
 ```
-Compliance Request
+Cross-Chain Transfer Request
     ↓
-zkML Compliance Model (ONNX)
+zkML Authorization Model (ONNX)
     ↓
 JOLT-Atlas Proof Generation
     ↓
 EIP-712 Attestation
     ↓
-Circle Gateway API → Cross-chain Transfer
+Circle Gateway API → Cross-chain USDC Transfer
 ```
 
 ## Features
 
-- **Compliance Model**: ML model evaluates KYC/AML rules
-- **zkML Proofs**: Cryptographic proof of compliance check
-- **Gateway Integration**: Circle Gateway for cross-chain transfers
-- **Audit Trail**: On-chain commitment of all compliance decisions
+- **Authorization Model**: ML model evaluates if agent is authorized
+- **zkML Proofs**: Cryptographic proof of authorization check
+- **Gateway Integration**: Circle Gateway for instant cross-chain transfers
+- **Unified Balance**: Access USDC across Arbitrum, Base, Ethereum, etc.
 
 ## Prerequisites
 

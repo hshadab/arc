@@ -11,7 +11,7 @@ These demos use [JOLT-Atlas](https://github.com/ICME-Lab/jolt-atlas) to generate
 | Demo | Description | Circle Product | Port |
 |------|-------------|----------------|------|
 | [OOAK Agents](demos/ooak-agents/) | Trustless USDC payment agents | Object Oriented Agent Kit | 8616 |
-| [Gateway Compliance](demos/gateway-compliance/) | Compliance agent for cross-chain transfers | [Gateway](https://www.circle.com/gateway) | 8617 |
+| [Cross-Chain Gateway](demos/gateway-compliance/) | zkML-authorized cross-chain USDC transfers | [Gateway](https://www.circle.com/gateway) | 8617 |
 | [Programmable Wallets](demos/programmable-wallets/) | Authorized wallet operations | [Wallets](https://developers.circle.com/wallets) | 8618 |
 | [Autonomous Settlement](demos/autonomous-settlement/) | **Compliant AI agent for agentic commerce** | [Compliance Engine](https://www.circle.com/wallets/compliance-engine) | 8619 |
 
@@ -138,8 +138,9 @@ This enables trustless agents from untrusted sources to be used safely.
 - See [OOAK documentation](https://developers.circle.com)
 
 ### Gateway
-- Cross-chain USDC transfers with compliance proofs
-- Agent proves it evaluated KYC/AML rules before transfer
+- Cross-chain USDC liquidity in <500ms
+- Unified USDC balance across chains (Arbitrum, Base, Ethereum, etc.)
+- zkML proofs authorize the agent to use Gateway
 - See [Gateway documentation](https://www.circle.com/gateway)
 
 ### Programmable Wallets
