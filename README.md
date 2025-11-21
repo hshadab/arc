@@ -49,7 +49,8 @@ arc/
 └── demos/
     ├── ooak-agents/         # OOAK demo
     ├── gateway-compliance/  # Gateway demo
-    └── programmable-wallets/ # Wallets demo
+    ├── programmable-wallets/ # Wallets demo
+    └── autonomous-settlement/ # Compliance agent demo
 ```
 
 ## Quick Start
@@ -64,8 +65,10 @@ arc/
 
 ```bash
 cd jolt-atlas
-./build.sh
+cargo build --release --example authorization_json
 ```
+
+This builds the ~172MB prover binary at `target/release/examples/authorization_json`.
 
 ### 2. Run a Demo
 
@@ -91,6 +94,14 @@ npm install
 cp .env.example .env
 npm start
 # Open http://localhost:8618
+
+# Autonomous Settlement (recommended)
+cd demos/autonomous-settlement
+npm install
+cp .env.example .env
+# Edit .env with your private key
+npm start
+# API at http://localhost:8619
 ```
 
 ### 3. Get Testnet Funds
@@ -135,6 +146,12 @@ This enables trustless agents from untrusted sources to be used safely.
 - Wallet operations authorized by zkML proofs
 - Multi-approval workflows with cryptographic attestation
 - See [Wallets documentation](https://developers.circle.com/wallets)
+
+### Compliance Engine
+- Autonomous settlement agent with AML/CFT screening
+- zkML proofs attest compliance was evaluated before every transaction
+- Creates immutable audit trail for regulators
+- See [Compliance Engine documentation](https://www.circle.com/wallets/compliance-engine)
 
 ## Development
 
