@@ -10,7 +10,7 @@ These demos use [JOLT-Atlas](https://github.com/ICME-Lab/jolt-atlas) to generate
 
 | Demo | What it Does | Circle Product | Port |
 |------|-------------|----------------|------|
-| [OOAK Agents](demos/ooak-agents/) | Trustless USDC payment agents with zkML authorization | Object Oriented Agent Kit | 8616 |
+| [OOAK Agents](demos/ooak-agents/) | Trustless USDC payment agents with zkML + [x402](https://www.x402.org/) micropayments | [**OOAK**](https://github.com/circlefin/circle-ooak) - Object Oriented Agent Kit | 8616 |
 | [Cross-Chain Gateway](demos/gateway-compliance/) | Instant cross-chain USDC transfers (<500ms) with zkML authorization | [**Gateway**](https://www.circle.com/gateway) - Cross-chain liquidity | 8617 |
 | [Programmable Wallets](demos/programmable-wallets/) | Wallet operations with zkML authorization | [**Wallets**](https://developers.circle.com/wallets) - Developer-controlled wallets | 8618 |
 | [**Autonomous Settlement**](demos/autonomous-settlement/) | **Compliant AI agent for agentic commerce** | [**Compliance Engine**](https://www.circle.com/wallets/compliance-engine) - AML/CFT screening | 8619 |
@@ -140,8 +140,9 @@ This enables trustless agents from untrusted sources to be used safely.
 
 ### OOAK (Object Oriented Agent Kit)
 - Extends Circle's agent framework with zkML proofs
+- Integrates [x402](https://www.x402.org/) for HTTP 402 micropayments
 - Every payment decision is cryptographically verified
-- See [OOAK documentation](https://developers.circle.com)
+- See [OOAK repository](https://github.com/circlefin/circle-ooak)
 
 ### Gateway
 - Cross-chain USDC liquidity in <500ms
