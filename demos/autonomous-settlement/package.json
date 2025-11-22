@@ -11,5 +11,9 @@
     "dotenv": "^16.4.5",
     "ethers": "^6.13.4",
     "express": "^4.21.1"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "^5.0.0",
+    "solc": "^0.8.20"
   }
 }

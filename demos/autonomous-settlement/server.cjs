@@ -367,10 +367,11 @@ app.post('/settle', async (req, res) => {
         try {
           const { ethers } = require('ethers');
           const amountWei = ethers.parseUnits(amount, 6); // USDC has 6 decimals
+          const normalizedTo = ethers.getAddress(to); // Ensure proper checksum
 
           // Execute transfer through controller with proof verification
           const tx = await controller.executeTransfer(
-            to,
+            normalizedTo,
             amountWei,
             {
               proofHash: commitment.proofHash,
