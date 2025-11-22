@@ -162,7 +162,7 @@ curl -X POST http://localhost:8619/settle \
 ┌─────────────────────────────────────────────────────────┐
 │           Step 6: Settlement Execution                   │
 │                                                         │
-│   Circle Programmable Wallet (or EOA fallback)          │
+│   Agent Wallet (EOA with private key)                   │
 │   • Execute USDC transfer on Arc                        │
 │   • Sub-second finality                                 │
 │   • Transaction includes proof reference                │
@@ -296,26 +296,18 @@ CIRCLE_API_KEY=TEST_API_KEY:xxx:xxx
 - Actual sanctions screening
 - Production risk scores
 
-### Mode 3: Full Circle Integration (Recommended for Production)
+### Mode 3: Full Circle Integration
 
-Add Circle Programmable Wallet for managed transfers.
+Add Circle API for live compliance screening.
 
 ```bash
 PRIVATE_KEY=your_key
 CIRCLE_API_KEY=TEST_API_KEY:xxx:xxx
-CIRCLE_WALLET_ID=your-wallet-id
 ```
 
-- **Circle Programmable Wallet** - Agent owns wallet via API, not private key
-- API-based transfers (no key exposure)
-- Enterprise-grade custody
-- Native Compliance Engine integration
-
-**Why Programmable Wallets are better for agents:**
-- No private key to secure or leak
-- All actions logged via API (audit-friendly)
-- Built-in compliance features
-- Institutional-grade security
+- Agent owns wallet via private key (true ownership)
+- Real Circle Compliance Engine screening
+- Production-grade AML/CFT checks
 
 ---
 
