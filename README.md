@@ -138,8 +138,10 @@ This enables trustless agents from untrusted sources to be used safely.
 - See [OOAK repository](https://github.com/circlefin/circle-ooak)
 
 ### Compliance Engine
+- **Real Circle Compliance Engine API** integration ([API docs](https://developers.circle.com/api-reference/w3s/compliance/screen-address))
 - Dual-sided compliance screening (sender + recipient)
-- AML/CFT checks, sanctions screening, risk scoring
+- Screens against OFAC sanctions, PEP lists, high-risk industries
+- Risk categories: `SANCTIONS`, `ILLICIT_BEHAVIOR`, `HIGH_RISK_INDUSTRY`, `GAMBLING`, `TERRORIST_FINANCING`
 - zkML proofs attest compliance was evaluated before every transaction
 - Creates immutable audit trail for regulators
 - See [Compliance Engine documentation](https://www.circle.com/wallets/compliance-engine)

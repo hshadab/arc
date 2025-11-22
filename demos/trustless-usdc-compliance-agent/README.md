@@ -38,6 +38,35 @@ This enables true autonomous agents that institutions can trust.
 | Trustless Controller | ArcAgentController | On-chain proof verification before transfers |
 | Settlement Layer | [Arc Network](https://arc.network) | Sub-second finality, USDC-native |
 
+### Real Circle Compliance Engine Integration
+
+This demo uses the **real Circle Compliance Engine API** to screen addresses:
+
+```
+POST https://api.circle.com/v1/w3s/compliance/screening/addresses
+```
+
+**What gets checked:**
+- OFAC sanctions lists
+- PEP (Politically Exposed Persons) databases
+- High-risk industry associations
+- Illicit behavior patterns
+- Terrorist financing indicators
+
+**Risk categories returned:**
+- `SANCTIONS` - Address on sanctions list
+- `ILLICIT_BEHAVIOR` - Associated with illicit activity
+- `HIGH_RISK_INDUSTRY` - High-risk industry exposure
+- `GAMBLING`, `TERRORIST_FINANCING`, `HACKING`, `HUMAN_TRAFFICKING`
+
+**Response processing:**
+```javascript
+// Risk levels mapped to numeric scores (0-10)
+LOW → 2, MEDIUM → 5, HIGH → 7, SEVERE → 9, CRITICAL → 10
+```
+
+API documentation: https://developers.circle.com/api-reference/w3s/compliance/screen-address
+
 ---
 
 ## Quick Start
