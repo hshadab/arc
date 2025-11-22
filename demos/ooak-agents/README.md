@@ -1,8 +1,8 @@
-# Circle OOAK + zkML on Arc
+# Trustless USDC Spending Agent
 
-**Trustless USDC Agents with Cryptographic Proofs**
+**zkML-Proven Payments with Cryptographic Guarantees**
 
-A demonstration of Circle's [Object-Oriented Agent Kit (OOAK)](https://github.com/circlefin/circle-ooak) enhanced with JOLT-Atlas zkML proofs and [x402](https://www.x402.org/) micropayments on Arc blockchain.
+A demonstration of trustless AI agent payments using Circle's [Object-Oriented Agent Kit (OOAK)](https://github.com/circlefin/circle-ooak), JOLT-Atlas zkML proofs, and [x402](https://www.x402.org/) micropayments on Arc blockchain.
 
 ## 🎯 What This Demo Does
 

@@ -1,4 +1,4 @@
-// Autonomous Settlement Agent
+// USDC Compliance Agent
 // Compliant AI agent for agentic commerce on Arc
 // Showcases zkML-proven compliance for autonomous transactions
 
@@ -126,7 +126,7 @@ initCircleWallet().then(wallet => {
   }
 });
 
-console.log('\n=== Autonomous Settlement Agent ===');
+console.log('\n=== USDC Compliance Agent ===');
 console.log(`Agent Wallet: ${wallet.address}`);
 console.log(`Network: Arc Testnet (${ARC_CONFIG.chainId})`);
 console.log(`zkML Available: ${zkml.isAvailable()}`);
@@ -209,7 +209,7 @@ app.get('/health', async (req, res) => {
   }
 
   res.json({
-    service: 'Autonomous Settlement Agent',
+    service: 'USDC Compliance Agent',
     status: 'operational',
     agent: {
       eoaWallet: wallet.address,
@@ -437,7 +437,7 @@ app.get('/settlement/:id', (req, res) => {
 const PORT = process.env.PORT || 8619;
 
 app.listen(PORT, () => {
-  console.log(`Autonomous Settlement Agent running on http://localhost:${PORT}`);
+  console.log(`USDC Compliance Agent running on http://localhost:${PORT}`);
   console.log(`\nEndpoints:`);
   console.log(`  GET  /health        - Agent status and stats`);
   console.log(`  POST /screen        - Screen an address`);

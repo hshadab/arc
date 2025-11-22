@@ -51,8 +51,8 @@ arc/
 │   └── arc-utils/           # Arc blockchain utilities
 │
 └── demos/
-    ├── ooak-agents/           # Trustless USDC Spending Agent
-    └── autonomous-settlement/ # USDC Compliance Agent
+    ├── ooak-agents/           # Trustless USDC Spending Agent (port 8616)
+    └── autonomous-settlement/ # USDC Compliance Agent (port 8619)
 ```
 
 ## Quick Start

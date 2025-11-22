@@ -1,4 +1,4 @@
-# Autonomous Settlement Agent
+# USDC Compliance Agent
 
 > **Agentic Commerce on Arc** — An autonomous AI agent that **owns a wallet** and executes compliant USDC settlements with cryptographic proof of regulatory compliance.
 
@@ -71,14 +71,14 @@ npm start
 
 Output:
 ```
-=== Autonomous Settlement Agent ===
+=== USDC Compliance Agent ===
 Agent Wallet: 0x596C59B67fF13E336aC031fD5268322dA72443be
 Network: Arc Testnet (5042002)
 zkML Available: true
 Compliance Mode: MOCK
 ====================================
 
-Autonomous Settlement Agent running on http://localhost:8619
+USDC Compliance Agent running on http://localhost:8619
 ```
 
 ### Step 4: Execute a Settlement
@@ -197,7 +197,7 @@ curl http://localhost:8619/health
 
 ```json
 {
-  "service": "Autonomous Settlement Agent",
+  "service": "USDC Compliance Agent",
   "status": "operational",
   "agent": {
     "eoaWallet": "0x596C59B67fF13E336aC031fD5268322dA72443be",
@@ -408,16 +408,16 @@ Get USDC for your agent:
 ## Architecture
 
 ```
-demos/autonomous-settlement/
-├── server.cjs           # Main agent server
+demos/autonomous-settlement/   # USDC Compliance Agent
+├── server.cjs                 # Main agent server
 ├── package.json
-├── .env                 # Configuration
+├── .env                       # Configuration
 └── README.md
 
 Shared dependencies:
-├── shared/zkml-client/  # JOLT-Atlas client
-├── shared/arc-utils/    # Arc blockchain utils
-└── jolt-atlas/          # zkML prover (172MB binary)
+├── shared/zkml-client/        # JOLT-Atlas client
+├── shared/arc-utils/          # Arc blockchain utils
+└── jolt-atlas/                # zkML prover (172MB binary)
 ```
 
 ---
