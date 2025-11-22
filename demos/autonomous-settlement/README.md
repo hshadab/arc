@@ -100,18 +100,20 @@ curl -X POST http://localhost:8619/settle \
   "approved": true,
   "screening": {
     "result": "APPROVED",
-    "riskScore": 2,
-    "source": "mock"
+    "riskScore": 3,
+    "source": "mock",
+    "sender": { "result": "APPROVED", "riskScore": 3 },
+    "recipient": { "result": "APPROVED", "riskScore": 3 }
   },
   "proof": {
-    "hash": "7e1b0baa3ee38b171c47d9aaae676af6",
+    "hash": "3ff6295a3cdf1efc1bbaecf67b715a52",
     "decision": "AUTHORIZED",
-    "confidence": 78.0,
-    "proveTimeMs": 2153,
-    "verifyTimeMs": 353
+    "confidence": 77,
+    "proveTimeMs": 2172,
+    "verifyTimeMs": 364
   },
-  "txHash": "0x...",
-  "explorerUrl": "https://testnet.arcscan.io/tx/0x...",
+  "txHash": "0xd6905fc7c877006952073f3a282e33bea45a35948893fe1dc3880675645f9bcd",
+  "explorerUrl": "https://testnet.arcscan.io/tx/0xd6905fc7...",
   "travelRuleRequired": false
 }
 ```
