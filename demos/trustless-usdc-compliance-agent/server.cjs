@@ -180,7 +180,7 @@ console.log('====================================\n');
  * Screen address using Circle Compliance Engine
  * API Docs: https://developers.circle.com/api-reference/w3s/compliance/screen-address
  */
-async function screenAddress(address, chain = 'ETH') {
+async function screenAddress(address, chain = 'ETH-SEPOLIA') {
   if (USE_LIVE_COMPLIANCE) {
     try {
       const response = await fetch(`${CIRCLE_API_URL}/compliance/screening/addresses`, {
