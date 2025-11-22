@@ -273,17 +273,32 @@ app.post('/settle', async (req, res) => {
   const startTime = Date.now();
 
   try {
-    // Step 1: Compliance screening
-    console.log('[STEP 1] Screening recipient...');
-    const screening = await screenAddress(to);
+    // Step 1: Dual-sided compliance screening
+    console.log('[STEP 1] Screening sender (agent wallet)...');
+    const senderScreening = await screenAddress(wallet.address);
 
-    // Step 2: Determine if Travel Rule applies ($3000+)
+    console.log('[STEP 2] Screening recipient...');
+    const recipientScreening = await screenAddress(to);
+
+    // Combine screening results
+    const screening = {
+      result: (senderScreening.result === 'APPROVED' && recipientScreening.result === 'APPROVED') ? 'APPROVED' : 'DENIED',
+      riskScore: Math.max(senderScreening.riskScore, recipientScreening.riskScore),
+      source: senderScreening.source,
+      sender: senderScreening,
+      recipient: recipientScreening
+    };
+
+    console.log(`[SCREEN] Sender: ${senderScreening.result} (risk: ${senderScreening.riskScore})`);
+    console.log(`[SCREEN] Recipient: ${recipientScreening.result} (risk: ${recipientScreening.riskScore})`);
+
+    // Step 3: Determine if Travel Rule applies ($3000+)
     const travelRuleRequired = amountNum >= 3000;
     if (travelRuleRequired) {
-      console.log('[STEP 2] Travel Rule applies (amount >= $3000)');
+      console.log('[STEP 3] Travel Rule applies (amount >= $3000)');
     }
 
-    // Step 3: Build compliance features for zkML
+    // Step 4: Build compliance features for zkML
     // Use features that align with the model's training data
     const complianceFeatures = {
       budget: screening.result === 'APPROVED' ? 15 : 5,
@@ -297,7 +312,7 @@ app.post('/settle', async (req, res) => {
     };
 
     // Step 4: Generate zkML proof
-    console.log('[STEP 3] Generating zkML compliance proof...');
+    console.log('[STEP 4] Generating zkML compliance proof...');
     let proof;
     if (zkml.isAvailable()) {
       proof = await zkml.generateProof(complianceFeatures);
@@ -312,7 +327,7 @@ app.post('/settle', async (req, res) => {
     const approved = proof.decision === 'AUTHORIZED' && screening.result === 'APPROVED';
 
     // Step 5: Sign commitment
-    console.log('[STEP 4] Signing commitment...');
+    console.log('[STEP 5] Signing commitment...');
     const commitment = {
       proofHash: '0x' + proof.proof_hash.padStart(64, '0'),
       decision: approved ? 1 : 0,
@@ -326,7 +341,7 @@ app.post('/settle', async (req, res) => {
     let explorerUrl = null;
 
     if (approved) {
-      console.log('[STEP 5] Executing settlement on Arc...');
+      console.log('[STEP 6] Executing settlement on Arc...');
 
       // Try Circle Wallet first, fall back to EOA
       const circleResult = await circleWalletTransfer(to, amount);

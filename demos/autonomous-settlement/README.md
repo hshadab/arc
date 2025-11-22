@@ -1,8 +1,17 @@
 # Autonomous Settlement Agent
 
-> **Agentic Commerce on Arc** — An autonomous AI agent that executes compliant USDC settlements with cryptographic proof of regulatory compliance.
+> **Agentic Commerce on Arc** — An autonomous AI agent that **owns a wallet** and executes compliant USDC settlements with cryptographic proof of regulatory compliance.
 
 Built for Arc's vision of autonomous agents "programmatically sending, exchanging, and settling value globally in real-time."
+
+### Agent Wallet Ownership
+
+The agent **owns and controls** its wallet, making autonomous spending decisions. Every transaction is preceded by:
+1. **Dual-sided compliance screening** - Both sender (agent) and recipient checked via Circle Compliance Engine
+2. **zkML proof generation** - Cryptographic attestation that compliance was evaluated
+3. **Immutable audit trail** - Proof hash + signature stored for regulators
+
+This enables true autonomous agents that institutions can trust.
 
 ---
 
@@ -118,18 +127,19 @@ curl -X POST http://localhost:8619/settle \
 └────────────────────────┬────────────────────────────────┘
                          ▼
 ┌─────────────────────────────────────────────────────────┐
-│           Step 1: Compliance Screening                   │
+│      Steps 1-2: Dual-Sided Compliance Screening          │
 │                                                         │
 │   Circle Compliance Engine API                          │
-│   • Screen recipient address                            │
-│   • Check sanctions lists                               │
-│   • Calculate risk score                                │
+│   • Screen SENDER (agent's wallet)                      │
+│   • Screen RECIPIENT address                            │
+│   • Check sanctions lists for both                      │
+│   • Calculate risk scores                               │
 │                                                         │
-│   Output: APPROVED/DENIED + risk level                  │
+│   Output: APPROVED/DENIED + risk levels for both        │
 └────────────────────────┬────────────────────────────────┘
                          ▼
 ┌─────────────────────────────────────────────────────────┐
-│           Step 2: zkML Proof Generation                  │
+│           Step 4: zkML Proof Generation                  │
 │                                                         │
 │   JOLT-Atlas Prover (~2.3 seconds)                      │
 │   • Prove compliance model executed correctly           │
@@ -140,7 +150,7 @@ curl -X POST http://localhost:8619/settle \
 └────────────────────────┬────────────────────────────────┘
                          ▼
 ┌─────────────────────────────────────────────────────────┐
-│           Step 3: Commitment Signing                     │
+│           Step 5: Commitment Signing                     │
 │                                                         │
 │   EIP-712 Typed Data Signature                          │
 │   • Sign proof hash + decision + timestamp              │
@@ -150,7 +160,7 @@ curl -X POST http://localhost:8619/settle \
 └────────────────────────┬────────────────────────────────┘
                          ▼
 ┌─────────────────────────────────────────────────────────┐
-│           Step 4: Settlement Execution                   │
+│           Step 6: Settlement Execution                   │
 │                                                         │
 │   Circle Programmable Wallet (or EOA fallback)          │
 │   • Execute USDC transfer on Arc                        │
@@ -286,9 +296,9 @@ CIRCLE_API_KEY=TEST_API_KEY:xxx:xxx
 - Actual sanctions screening
 - Production risk scores
 
-### Mode 3: Full Circle Integration
+### Mode 3: Full Circle Integration (Recommended for Production)
 
-Add Circle Wallet for managed transfers.
+Add Circle Programmable Wallet for managed transfers.
 
 ```bash
 PRIVATE_KEY=your_key
@@ -296,9 +306,16 @@ CIRCLE_API_KEY=TEST_API_KEY:xxx:xxx
 CIRCLE_WALLET_ID=your-wallet-id
 ```
 
-- Circle Programmable Wallet
-- API-based transfers (no key management)
+- **Circle Programmable Wallet** - Agent owns wallet via API, not private key
+- API-based transfers (no key exposure)
 - Enterprise-grade custody
+- Native Compliance Engine integration
+
+**Why Programmable Wallets are better for agents:**
+- No private key to secure or leak
+- All actions logged via API (audit-friendly)
+- Built-in compliance features
+- Institutional-grade security
 
 ---
 
