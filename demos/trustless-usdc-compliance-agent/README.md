@@ -1,4 +1,4 @@
-# USDC Compliance Agent
+# Trustless USDC Compliance Agent
 
 > **Agentic Commerce on Arc** — An autonomous AI agent that **owns a wallet** and executes compliant USDC settlements with cryptographic proof of regulatory compliance.
 
@@ -51,7 +51,7 @@ This enables true autonomous agents that institutions can trust.
 ### Step 1: Install Dependencies
 
 ```bash
-cd demos/usdc-compliance-agent
+cd demos/trustless-usdc-compliance-agent
 npm install
 ```
 
@@ -436,7 +436,7 @@ Get USDC for your agent:
 ## Architecture
 
 ```
-demos/usdc-compliance-agent/   # USDC Compliance Agent
+demos/trustless-usdc-compliance-agent/   # Trustless USDC Compliance Agent
 ├── server.cjs                 # Main agent server
 ├── contracts/
 │   ├── ArcAgentController.sol # Trustless controller contract

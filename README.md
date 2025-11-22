@@ -11,7 +11,7 @@ These demos use [JOLT-Atlas](https://github.com/ICME-Lab/jolt-atlas) to generate
 | Demo | What it Does | Circle Products | Port |
 |------|-------------|----------------|------|
 | [**Trustless USDC Spending Agent**](demos/trustless-usdc-spending-agent/) | zkML-proven USDC payments with [x402](https://www.x402.org/) micropayments | [OOAK](https://github.com/circlefin/circle-ooak) | 8616 |
-| [**USDC Compliance Agent**](demos/usdc-compliance-agent/) | Agent owns wallet, dual-sided compliance screening before every settlement | [Compliance Engine](https://www.circle.com/wallets/compliance-engine) | 8619 |
+| [**Trustless USDC Compliance Agent**](demos/trustless-usdc-compliance-agent/) | Agent owns wallet, dual-sided compliance screening before every settlement | [Compliance Engine](https://www.circle.com/wallets/compliance-engine) | 8619 |
 
 ### What These Demos Show
 
@@ -52,7 +52,7 @@ arc/
 │
 └── demos/
     ├── trustless-usdc-spending-agent/ # Trustless USDC Spending Agent (port 8616)
-    └── usdc-compliance-agent/         # USDC Compliance Agent (port 8619)
+    └── trustless-usdc-compliance-agent/         # Trustless USDC Compliance Agent (port 8619)
 ```
 
 ## Quick Start
@@ -83,8 +83,8 @@ cp .env.example .env
 npm start
 # Open http://localhost:8616
 
-# USDC Compliance Agent (recommended)
-cd demos/usdc-compliance-agent
+# Trustless USDC Compliance Agent (recommended)
+cd demos/trustless-usdc-compliance-agent
 npm install
 cp .env.example .env
 # Edit .env with your private key
