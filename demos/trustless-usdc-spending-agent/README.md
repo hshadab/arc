@@ -29,7 +29,7 @@ Demonstrates a complete trustless agent workflow where AI agents can execute USD
 ```bash
 # Clone repository
 git clone https://github.com/hshadab/arc.git
-cd arc/demos/ooak-agents
+cd arc/demos/trustless-usdc-spending-agent
 
 # Install dependencies
 npm install
