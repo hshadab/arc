@@ -88,7 +88,7 @@ curl -X POST http://localhost:8619/settle \
   -H "Content-Type: application/json" \
   -d '{
     "to": "0x742d35Cc6634C0532925a3b844Bc9e7595f5bE91",
-    "amount": "1000",
+    "amount": "0.1",
     "reference": "INV-2024-001"
   }'
 ```
@@ -245,7 +245,7 @@ curl -X POST http://localhost:8619/settle \
   -H "Content-Type: application/json" \
   -d '{
     "to": "0x742d35Cc6634C0532925a3b844Bc9e7595f5bE91",
-    "amount": "5000",
+    "amount": "0.1",
     "reference": "VENDOR-PAY-001",
     "memo": "Q4 services"
   }'

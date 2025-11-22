@@ -446,5 +446,5 @@ app.listen(PORT, () => {
   console.log(`\nExample:`);
   console.log(`  curl -X POST http://localhost:${PORT}/settle \\`);
   console.log(`    -H "Content-Type: application/json" \\`);
-  console.log(`    -d '{"to":"0x742d35Cc6634C0532925a3b844Bc9e7595f5bE91","amount":"100","reference":"INV-001"}'\n`);
+  console.log(`    -d '{"to":"0x742d35Cc6634C0532925a3b844Bc9e7595f5bE91","amount":"0.1","reference":"INV-001"}'\n`);
 });
