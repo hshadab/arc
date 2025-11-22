@@ -253,11 +253,20 @@ curl -X POST http://localhost:8619/screen \
 {
   "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f5bE91",
   "result": "APPROVED",
-  "riskScore": 3,
+  "riskScore": 2,
   "sanctions": false,
-  "source": "mock"
+  "riskCategories": [],
+  "source": "circle",
+  "alertId": "alert-123",
+  "timestamp": 1700000000000
 }
 ```
+
+**Risk Categories** (when detected):
+- `SANCTIONS` - Address on sanctions list
+- `ILLICIT_BEHAVIOR` - Associated with illicit activity
+- `HIGH_RISK_INDUSTRY` - High-risk industry exposure
+- `GAMBLING`, `TERRORIST_FINANCING`, `HACKING`, etc.
 
 ### `POST /settle`
 
@@ -315,9 +324,10 @@ PRIVATE_KEY=your_key
 CIRCLE_API_KEY=TEST_API_KEY:xxx:xxx
 ```
 
-- Real Circle Compliance Engine API
-- Actual sanctions screening against OFAC lists
-- Production-grade risk scores (0-10)
+- Real Circle Compliance Engine API ([docs](https://developers.circle.com/api-reference/w3s/compliance/screen-address))
+- Screens against OFAC sanctions, PEP lists, high-risk industries
+- Risk categories: `SANCTIONS`, `ILLICIT_BEHAVIOR`, `HIGH_RISK_INDUSTRY`, `GAMBLING`, `TERRORIST_FINANCING`, etc.
+- Risk scores mapped from API signals (LOW=2, MEDIUM=5, HIGH=7, SEVERE=9)
 - Agent owns wallet via private key (true ownership)
 
 ### Mode 3: Trustless Controller (Recommended)

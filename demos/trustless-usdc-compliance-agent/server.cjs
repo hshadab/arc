@@ -178,6 +178,7 @@ console.log('====================================\n');
 
 /**
  * Screen address using Circle Compliance Engine
+ * API Docs: https://developers.circle.com/api-reference/w3s/compliance/screen-address
  */
 async function screenAddress(address, chain = 'ETH') {
   if (USE_LIVE_COMPLIANCE) {
@@ -197,12 +198,52 @@ async function screenAddress(address, chain = 'ETH') {
 
       const data = await response.json();
 
+      // Handle API errors
+      if (!response.ok) {
+        console.error('[COMPLIANCE] Circle API error:', data.message || response.statusText);
+        return mockComplianceScreen(address);
+      }
+
       if (data.data) {
+        // Parse risk signals from decision.reasons array
+        const reasons = data.data.decision?.reasons || [];
+
+        // Map string risk levels to numeric scores (0-10)
+        const riskLevelMap = {
+          'LOW': 2,
+          'MEDIUM': 5,
+          'HIGH': 7,
+          'SEVERE': 9,
+          'CRITICAL': 10
+        };
+
+        let maxRisk = 0;
+        let hasSanctions = false;
+        let riskCategories = [];
+
+        for (const reason of reasons) {
+          // Get numeric risk score from string level
+          const riskLevel = riskLevelMap[reason.riskScore?.toUpperCase()] || 5;
+          maxRisk = Math.max(maxRisk, riskLevel);
+
+          // Check for sanctions in risk categories
+          if (reason.riskCategories?.includes('SANCTIONS')) {
+            hasSanctions = true;
+          }
+
+          // Collect all risk categories
+          if (reason.riskCategories) {
+            riskCategories.push(...reason.riskCategories);
+          }
+        }
+
         return {
           result: data.data.result, // APPROVED or DENIED
-          riskScore: data.data.riskScore || 0,
-          sanctions: data.data.sanctions || false,
-          source: 'circle'
+          riskScore: maxRisk,
+          sanctions: hasSanctions,
+          riskCategories: [...new Set(riskCategories)], // Unique categories
+          source: 'circle',
+          alertId: data.data.alertId || null
         };
       }
     } catch (error) {
@@ -225,12 +266,21 @@ function mockComplianceScreen(address) {
   // 90% approval rate for demo
   const approved = riskValue < 230;
   const riskScore = Math.floor(riskValue / 25.5); // 0-10 scale
+  const hasSanctions = riskValue > 250;
+
+  // Generate mock risk categories based on score
+  const riskCategories = [];
+  if (hasSanctions) riskCategories.push('SANCTIONS');
+  if (riskScore > 5) riskCategories.push('HIGH_RISK_INDUSTRY');
+  if (riskScore > 7) riskCategories.push('ILLICIT_BEHAVIOR');
 
   return {
     result: approved ? 'APPROVED' : 'DENIED',
     riskScore,
-    sanctions: riskValue > 250,
-    source: 'mock'
+    sanctions: hasSanctions,
+    riskCategories,
+    source: 'mock',
+    alertId: null
   };
 }
 
@@ -289,7 +339,12 @@ app.post('/screen', async (req, res) => {
 
   res.json({
     address,
-    ...screening,
+    result: screening.result,
+    riskScore: screening.riskScore,
+    sanctions: screening.sanctions,
+    riskCategories: screening.riskCategories || [],
+    source: screening.source,
+    alertId: screening.alertId || null,
     timestamp: Date.now()
   });
 });
@@ -453,7 +508,14 @@ app.post('/settle', async (req, res) => {
       screening: {
         result: screening.result,
         riskScore: screening.riskScore,
-        source: screening.source
+        sanctions: screening.sender?.sanctions || screening.recipient?.sanctions || false,
+        riskCategories: [...new Set([
+          ...(senderScreening.riskCategories || []),
+          ...(recipientScreening.riskCategories || [])
+        ])],
+        source: screening.source,
+        sender: senderScreening,
+        recipient: recipientScreening
       },
       proof: {
         hash: proof.proof_hash,
