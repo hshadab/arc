@@ -51,7 +51,7 @@ This enables true autonomous agents that institutions can trust.
 ### Step 1: Install Dependencies
 
 ```bash
-cd demos/autonomous-settlement
+cd demos/usdc-compliance-agent
 npm install
 ```
 
@@ -436,7 +436,7 @@ Get USDC for your agent:
 ## Architecture
 
 ```
-demos/autonomous-settlement/   # USDC Compliance Agent
+demos/usdc-compliance-agent/   # USDC Compliance Agent
 ├── server.cjs                 # Main agent server
 ├── contracts/
 │   ├── ArcAgentController.sol # Trustless controller contract
