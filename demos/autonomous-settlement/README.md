@@ -4,6 +4,14 @@
 
 Built for Arc's vision of autonomous agents "programmatically sending, exchanging, and settling value globally in real-time."
 
+## Deployed on Arc Testnet
+
+| Component | Address | Explorer |
+|-----------|---------|----------|
+| **ArcAgentController** | `0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3` | [View](https://testnet.arcscan.io/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3) |
+| **Agent EOA** | `0x596C59B67fF13E336aC031fD5268322dA72443be` | [View](https://testnet.arcscan.io/address/0x596C59B67fF13E336aC031fD5268322dA72443be) |
+| **Example TX** | `0x180dfcbd...` | [View](https://testnet.arcscan.io/tx/0x180dfcbd083e9269458a9cb8a7f34bbc0dfa5f2b1ecb698a50cead1ac89911fc) |
+
 ### Agent Wallet Ownership
 
 The agent **owns and controls** its wallet, making autonomous spending decisions. Every transaction is preceded by:
@@ -23,12 +31,12 @@ This enables true autonomous agents that institutions can trust.
 
 ### Integration Stack
 
-| Component | Circle Product | Purpose |
-|-----------|---------------|---------|
-| Compliance Screening | [Compliance Engine](https://www.circle.com/wallets/compliance-engine) | AML/CFT checks, sanctions screening |
-| Settlement Execution | [Programmable Wallets](https://developers.circle.com/wallets) | Developer-controlled transfers |
-| Proof Generation | JOLT-Atlas | zkML cryptographic proofs |
-| Settlement Layer | Arc Network | Sub-second finality, USDC-native |
+| Component | Provider | Purpose |
+|-----------|----------|---------|
+| Compliance Screening | [Circle Compliance Engine](https://www.circle.com/wallets/compliance-engine) | AML/CFT checks, sanctions screening |
+| zkML Proofs | [NovaNet](https://novanet.xyz) / JOLT-Atlas | Cryptographic proof of compliance |
+| Trustless Controller | ArcAgentController | On-chain proof verification before transfers |
+| Settlement Layer | [Arc Network](https://arc.network) | Sub-second finality, USDC-native |
 
 ---
 
@@ -311,6 +319,26 @@ CIRCLE_API_KEY=TEST_API_KEY:xxx:xxx
 - Real Circle Compliance Engine screening
 - Production-grade AML/CFT checks
 
+### Mode 4: Trustless Controller (Recommended)
+
+Deploy ArcAgentController for on-chain proof enforcement.
+
+```bash
+PRIVATE_KEY=your_key
+CIRCLE_API_KEY=TEST_API_KEY:xxx:xxx
+ARC_AGENT_CONTROLLER_ADDRESS=0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3
+```
+
+- **On-chain enforcement**: Controller verifies EIP-712 signatures before releasing USDC
+- **Proof-gated transfers**: Funds can't move without valid zkML proof
+- **Immutable audit trail**: Every transfer emits `TransferExecuted` event with proofHash
+- **Replay protection**: Nonces prevent signature reuse
+
+To deploy your own controller:
+```bash
+node contracts/compile-and-deploy.cjs
+```
+
 ---
 
 ## Performance
@@ -410,6 +438,10 @@ Get USDC for your agent:
 ```
 demos/autonomous-settlement/   # USDC Compliance Agent
 ├── server.cjs                 # Main agent server
+├── contracts/
+│   ├── ArcAgentController.sol # Trustless controller contract
+│   ├── ArcAgentController.json # Compiled ABI
+│   └── compile-and-deploy.cjs # Deployment script
 ├── package.json
 ├── .env                       # Configuration
 └── README.md
@@ -434,10 +466,10 @@ Shared dependencies:
 
 ## Resources
 
-- [Arc Network](https://www.arc.network) — L1 for agentic commerce
+- [Arc Network](https://arc.network) — L1 for agentic commerce
 - [Arc Docs](https://docs.arc.network) — Technical documentation
+- [NovaNet](https://novanet.xyz) — zkML proving network
 - [Circle Compliance Engine](https://www.circle.com/wallets/compliance-engine) — AML/CFT screening
-- [Circle Programmable Wallets](https://developers.circle.com/wallets) — Developer-controlled wallets
 - [JOLT-Atlas](https://github.com/ICME-Lab/jolt-atlas) — zkML prover
 
 ---
