@@ -8,18 +8,16 @@ These demos use [JOLT-Atlas](https://github.com/ICME-Lab/jolt-atlas) to generate
 
 ## Demos
 
-| Demo | What it Does | Circle Product | Port |
+| Demo | What it Does | Circle Products | Port |
 |------|-------------|----------------|------|
-| [OOAK Agents](demos/ooak-agents/) | Trustless USDC payment agents with zkML + [x402](https://www.x402.org/) micropayments | [**OOAK**](https://github.com/circlefin/circle-ooak) - Object Oriented Agent Kit | 8616 |
-| [Cross-Chain Gateway](demos/gateway-compliance/) | Instant cross-chain USDC transfers (<500ms) with zkML authorization | [**Gateway**](https://www.circle.com/gateway) - Cross-chain liquidity | 8617 |
-| [Programmable Wallets](demos/programmable-wallets/) | Wallet operations with zkML authorization | [**Wallets**](https://developers.circle.com/wallets) - Developer-controlled wallets | 8618 |
-| [**Autonomous Settlement**](demos/autonomous-settlement/) | **Compliant AI agent for agentic commerce** | [**Compliance Engine**](https://www.circle.com/wallets/compliance-engine) - AML/CFT screening | 8619 |
+| [**Trustless USDC Spending Agent**](demos/ooak-agents/) | zkML-proven USDC payments with [x402](https://www.x402.org/) micropayments | [OOAK](https://github.com/circlefin/circle-ooak) | 8616 |
+| [**USDC Compliance Agent**](demos/autonomous-settlement/) | Agent owns wallet, dual-sided compliance screening before every settlement | [Compliance Engine](https://www.circle.com/wallets/compliance-engine) | 8619 |
 
-### Circle Product Summary
+### What These Demos Show
 
-- **Gateway**: Unified USDC balance across chains, instant cross-chain transfers
-- **Compliance Engine**: AML/CFT screening, sanctions checks, transaction monitoring
-- **Programmable Wallets**: Developer-controlled wallets via API
+- **Trustless Spending**: Agent decisions are cryptographically proven (not just logged)
+- **Compliance**: AML/CFT screening on both sender and recipient via Circle Compliance Engine
+- **Wallet Ownership**: Agent owns wallet via private key - true ownership, no custodian
 
 ## Architecture
 
@@ -53,10 +51,8 @@ arc/
 │   └── arc-utils/           # Arc blockchain utilities
 │
 └── demos/
-    ├── ooak-agents/         # OOAK demo
-    ├── gateway-compliance/  # Gateway demo
-    ├── programmable-wallets/ # Wallets demo
-    └── autonomous-settlement/ # Compliance agent demo
+    ├── ooak-agents/           # Trustless USDC Spending Agent
+    └── autonomous-settlement/ # USDC Compliance Agent
 ```
 
 ## Quick Start
@@ -79,7 +75,7 @@ This builds the ~172MB prover binary at `target/release/examples/authorization_j
 ### 2. Run a Demo
 
 ```bash
-# OOAK Agents (original demo)
+# Trustless USDC Spending Agent
 cd demos/ooak-agents
 npm install
 cp .env.example .env
@@ -87,21 +83,7 @@ cp .env.example .env
 npm start
 # Open http://localhost:8616
 
-# Gateway Compliance
-cd demos/gateway-compliance
-npm install
-cp .env.example .env
-npm start
-# Open http://localhost:8617
-
-# Programmable Wallets
-cd demos/programmable-wallets
-npm install
-cp .env.example .env
-npm start
-# Open http://localhost:8618
-
-# Autonomous Settlement (recommended)
+# USDC Compliance Agent (recommended)
 cd demos/autonomous-settlement
 npm install
 cp .env.example .env
@@ -144,19 +126,9 @@ This enables trustless agents from untrusted sources to be used safely.
 - Every payment decision is cryptographically verified
 - See [OOAK repository](https://github.com/circlefin/circle-ooak)
 
-### Gateway
-- Cross-chain USDC liquidity in <500ms
-- Unified USDC balance across chains (Arbitrum, Base, Ethereum, etc.)
-- zkML proofs authorize the agent to use Gateway
-- See [Gateway documentation](https://www.circle.com/gateway)
-
-### Programmable Wallets
-- Wallet operations authorized by zkML proofs
-- Multi-approval workflows with cryptographic attestation
-- See [Wallets documentation](https://developers.circle.com/wallets)
-
 ### Compliance Engine
-- Autonomous settlement agent with AML/CFT screening
+- Dual-sided compliance screening (sender + recipient)
+- AML/CFT checks, sanctions screening, risk scoring
 - zkML proofs attest compliance was evaluated before every transaction
 - Creates immutable audit trail for regulators
 - See [Compliance Engine documentation](https://www.circle.com/wallets/compliance-engine)
