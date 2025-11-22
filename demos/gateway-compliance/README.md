@@ -34,7 +34,7 @@ Circle Gateway API → Cross-chain USDC Transfer
 - Node.js 18+
 - Arc testnet wallet with USDC
 - Circle Gateway API key (get from https://console.circle.com)
-- Built jolt-atlas (`cd ../../jolt-atlas && ./build.sh`)
+- Built jolt-atlas (`cd ../../jolt-atlas && cargo build --release --example authorization_json`)
 
 ## Setup
 

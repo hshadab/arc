@@ -1,8 +1,8 @@
-# Circle OOAK + NovaNet zkML on Arc
+# Circle OOAK + zkML on Arc
 
 **Trustless USDC Agents with Cryptographic Proofs**
 
-A demonstration of Circle's Object-Oriented Agent Kit (OOAK) enhanced with NovaNet zkML proofs and x402 micropayments on Arc blockchain.
+A demonstration of Circle's [Object-Oriented Agent Kit (OOAK)](https://github.com/circlefin/circle-ooak) enhanced with JOLT-Atlas zkML proofs and [x402](https://www.x402.org/) micropayments on Arc blockchain.
 
 ## 🎯 What This Demo Does
 
@@ -12,7 +12,7 @@ Demonstrates a complete trustless agent workflow where AI agents can execute USD
 2. **WalletInstanceAgent** - Processes request with x402 payment capability
 3. **@secure_tool: send_usdc** - Protected tool with 3-stage approval workflow:
    - **Approval Hook 1/3**: ONNX neural network authorization model
-   - **Approval Hook 2/3**: NovaNet zkML proof generation (paid via x402)
+   - **Approval Hook 2/3**: JOLT-Atlas zkML proof generation (paid via x402)
    - **Approval Hook 3/3**: Cryptographic commitment attestation on Arc
 4. **Workflow Manager** - Evaluates approval results and authorizes execution
 5. **Tool Execution** - USDC transfer on Arc testnet
@@ -29,7 +29,7 @@ Demonstrates a complete trustless agent workflow where AI agents can execute USD
 ```bash
 # Clone repository
 git clone https://github.com/hshadab/arc.git
-cd arc/ooak/node-ui
+cd arc/demos/ooak-agents
 
 # Install dependencies
 npm install
@@ -75,7 +75,7 @@ WalletInstanceAgent (0x1f40...0CC6)
     │
     ├─ Approval Hook 1/3: ONNX Authorization (~5ms)
     │
-    ├─ Approval Hook 2/3: NovaNet zkML Proof (~600-800ms, paid via x402)
+    ├─ Approval Hook 2/3: JOLT-Atlas zkML Proof (~600-800ms, paid via x402)
     │   └─ Cost: 0.003 USDC via HTTP 402 Payment Required
     │
     └─ Approval Hook 3/3: Commitment on Arc (~2-3s)
@@ -94,7 +94,7 @@ Tool Execution: send_usdc(wfid=approved)
 - `@secure_tool`: Decorator adding approval hooks to payment functions
 - `WorkflowManager`: Final authorization decision maker
 
-**NovaNet zkML**
+**JOLT-Atlas zkML**
 - JOLT-Atlas proof generation for ONNX inference (percentage_limit model, 1KB)
 - Cryptographic guarantee that AI model actually executed
 - **Real zkML proofs enabled by default** (~600-800ms per proof)
@@ -168,7 +168,6 @@ SPEND_GATE_ADDRESS=       # SpendGate contract
 ## 🔗 Links
 
 - **Circle OOAK**: https://www.circle.com/blog/ooak-object-oriented-agent-kit
-- **NovaNet**: https://www.novanet.xyz/
 - **JOLT-Atlas zkML**: https://github.com/ICME-Lab/jolt-atlas
 - **x402 Protocol**: https://github.com/coinbase/x402
 - **Arc Testnet Explorer**: https://testnet.arcscan.app
@@ -219,6 +218,6 @@ MIT
 ## 🙏 Acknowledgments
 
 - **Circle** - OOAK framework and Arc blockchain
-- **NovaNet** - zkML infrastructure
+- **JOLT-Atlas** - zkML infrastructure
 - **Coinbase** - x402 micropayment protocol
 - **ICME Lab** - JOLT-Atlas zkML implementation
