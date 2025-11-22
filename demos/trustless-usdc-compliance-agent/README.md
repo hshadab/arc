@@ -67,6 +67,44 @@ LOW → 2, MEDIUM → 5, HIGH → 7, SEVERE → 9, CRITICAL → 10
 
 API documentation: https://developers.circle.com/api-reference/w3s/compliance/screen-address
 
+### How Compliance → ONNX Model → zkML Works
+
+The magic happens in three steps:
+
+**1. Compliance Engine → Model Features**
+```javascript
+// Circle API returns screening results
+{ result: "APPROVED", riskScore: 2, riskCategories: [] }
+
+// Transformed to ONNX model inputs
+{
+  budget: 15,    // 15 if approved, 5 if denied
+  trust: 7,      // 7 if approved, 0 if denied
+  amount: 5,     // 5 if approved, 12 if denied
+  risk: 0,       // 0 if riskScore <= 7, 1 if > 7
+  velocity: 2, day: 1, time: 1, category: 0
+}
+```
+
+**2. ONNX Model Makes Decision**
+- Neural network evaluates 8 features
+- Outputs: AUTHORIZED (1) or DENIED (0)
+- Confidence score (0-100%)
+
+**3. zkML Proves the Decision**
+
+This is where trustlessness comes in. JOLT-Atlas generates a **cryptographic proof** that:
+- The **exact ONNX model** ran (not a different model)
+- On the **exact inputs** (the compliance features above)
+- Producing the **exact output** (AUTHORIZED/DENIED)
+
+Without zkML, you'd have to trust the agent's logs. With zkML, anyone can **mathematically verify** the decision was computed correctly.
+
+**Why This Matters:**
+- Institutions can deploy agents from untrusted sources
+- Regulators get cryptographic audit trails
+- No "trust me" needed—just verify the proof
+
 ---
 
 ## Quick Start
