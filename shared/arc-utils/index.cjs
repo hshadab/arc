@@ -8,7 +8,7 @@ const ARC_CONFIG = {
   chainId: 5042002,
   rpcUrl: 'https://rpc.testnet.arc.network',
   usdcAddress: '0x3600000000000000000000000000000000000000',
-  explorerUrl: 'https://testnet.arcscan.io'
+  explorerUrl: 'https://testnet.arcscan.app'
 };
 
 // Known contract addresses on Arc Testnet

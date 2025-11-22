@@ -8,9 +8,9 @@ Built for Arc's vision of autonomous agents "programmatically sending, exchangin
 
 | Component | Address | Explorer |
 |-----------|---------|----------|
-| **ArcAgentController** | `0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3` | [View](https://testnet.arcscan.io/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3) |
-| **Agent EOA** | `0x596C59B67fF13E336aC031fD5268322dA72443be` | [View](https://testnet.arcscan.io/address/0x596C59B67fF13E336aC031fD5268322dA72443be) |
-| **Example TX** | `0x180dfcbd...` | [View](https://testnet.arcscan.io/tx/0x180dfcbd083e9269458a9cb8a7f34bbc0dfa5f2b1ecb698a50cead1ac89911fc) |
+| **ArcAgentController** | `0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3` | [View](https://testnet.arcscan.app/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3) |
+| **Agent EOA** | `0x596C59B67fF13E336aC031fD5268322dA72443be` | [View](https://testnet.arcscan.app/address/0x596C59B67fF13E336aC031fD5268322dA72443be) |
+| **Example TX** | `0x180dfcbd...` | [View](https://testnet.arcscan.app/tx/0x180dfcbd083e9269458a9cb8a7f34bbc0dfa5f2b1ecb698a50cead1ac89911fc) |
 
 ### Agent Wallet Ownership
 
@@ -121,7 +121,7 @@ curl -X POST http://localhost:8619/settle \
     "verifyTimeMs": 364
   },
   "txHash": "0xd6905fc7c877006952073f3a282e33bea45a35948893fe1dc3880675645f9bcd",
-  "explorerUrl": "https://testnet.arcscan.io/tx/0xd6905fc7...",
+  "explorerUrl": "https://testnet.arcscan.app/tx/0xd6905fc7...",
   "travelRuleRequired": false
 }
 ```
