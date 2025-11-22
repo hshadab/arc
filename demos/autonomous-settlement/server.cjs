@@ -18,6 +18,9 @@ const {
   getTxExplorerUrl
 } = require('../../shared/arc-utils/index.cjs');
 
+// ArcAgentController ABI
+const controllerABI = require('./contracts/ArcAgentController.json').abi;
+
 const app = express();
 app.use(express.json());
 app.use(express.static('public'));
@@ -43,6 +46,19 @@ const provider = createProvider();
 const CIRCLE_API_KEY = process.env.CIRCLE_API_KEY;
 const CIRCLE_API_URL = 'https://api.circle.com/v1/w3s';
 const USE_LIVE_COMPLIANCE = CIRCLE_API_KEY && CIRCLE_API_KEY.includes(':');
+
+// ArcAgentController configuration
+const CONTROLLER_ADDRESS = process.env.ARC_AGENT_CONTROLLER_ADDRESS;
+const USE_CONTROLLER = !!CONTROLLER_ADDRESS;
+
+// Initialize controller contract if configured
+let controller = null;
+if (USE_CONTROLLER) {
+  const { ethers } = require('ethers');
+  const controllerProvider = new ethers.JsonRpcProvider(process.env.ARC_RPC_URL || ARC_CONFIG.rpcUrl);
+  const controllerWallet = new ethers.Wallet(process.env.PRIVATE_KEY, controllerProvider);
+  controller = new ethers.Contract(CONTROLLER_ADDRESS, controllerABI, controllerWallet);
+}
 
 // Circle Wallet state
 let circleWalletId = process.env.CIRCLE_WALLET_ID || null;
@@ -131,6 +147,7 @@ console.log(`Agent Wallet: ${wallet.address}`);
 console.log(`Network: Arc Testnet (${ARC_CONFIG.chainId})`);
 console.log(`zkML Available: ${zkml.isAvailable()}`);
 console.log(`Compliance Mode: ${USE_LIVE_COMPLIANCE ? 'LIVE (Circle API)' : 'MOCK'}`);
+console.log(`Transfer Mode: ${USE_CONTROLLER ? `Controller (${CONTROLLER_ADDRESS})` : 'EOA (direct)'}`);
 console.log('====================================\n');
 
 // ============================================
@@ -222,6 +239,8 @@ app.get('/health', async (req, res) => {
       zkmlProofs: zkml.isAvailable(),
       complianceMode: USE_LIVE_COMPLIANCE ? 'live' : 'mock',
       circleWallet: !!circleWalletId,
+      controller: USE_CONTROLLER ? CONTROLLER_ADDRESS : null,
+      transferMode: USE_CONTROLLER ? 'controller' : (circleWalletId ? 'circle' : 'eoa'),
       network: 'arc-testnet'
     },
     stats: {
@@ -343,15 +362,44 @@ app.post('/settle', async (req, res) => {
     if (approved) {
       console.log('[STEP 6] Executing settlement on Arc...');
 
-      // Try Circle Wallet first, fall back to EOA
-      const circleResult = await circleWalletTransfer(to, amount);
+      // Use ArcAgentController if configured (trustless mode)
+      if (USE_CONTROLLER && controller) {
+        try {
+          const { ethers } = require('ethers');
+          const amountWei = ethers.parseUnits(amount, 6); // USDC has 6 decimals
 
-      if (circleResult) {
-        txHash = circleResult.txHash;
-        explorerUrl = getTxExplorerUrl(txHash);
-        console.log(`[SUCCESS] Circle Wallet TX: ${txHash}`);
-      } else {
-        // Fall back to EOA transfer
+          // Execute transfer through controller with proof verification
+          const tx = await controller.executeTransfer(
+            to,
+            amountWei,
+            {
+              proofHash: commitment.proofHash,
+              decision: commitment.decision,
+              timestamp: commitment.timestamp,
+              nonce: commitment.nonce
+            },
+            signature
+          );
+
+          const receipt = await tx.wait();
+          txHash = receipt.hash;
+          explorerUrl = getTxExplorerUrl(txHash);
+          console.log(`[SUCCESS] Controller TX: ${txHash}`);
+        } catch (txError) {
+          console.error('[ERROR] Controller transfer failed:', txError.message);
+        }
+      }
+      // Try Circle Wallet if no controller
+      else if (circleWalletId) {
+        const circleResult = await circleWalletTransfer(to, amount);
+        if (circleResult) {
+          txHash = circleResult.txHash;
+          explorerUrl = getTxExplorerUrl(txHash);
+          console.log(`[SUCCESS] Circle Wallet TX: ${txHash}`);
+        }
+      }
+      // Fall back to EOA transfer
+      else {
         try {
           const receipt = await transferUsdc(wallet, to, amount);
           txHash = receipt.hash;
