@@ -53,11 +53,33 @@ const USE_CONTROLLER = !!CONTROLLER_ADDRESS;
 
 // Initialize controller contract if configured
 let controller = null;
+let controllerWallet = null;
 if (USE_CONTROLLER) {
   const { ethers } = require('ethers');
   const controllerProvider = new ethers.JsonRpcProvider(process.env.ARC_RPC_URL || ARC_CONFIG.rpcUrl);
-  const controllerWallet = new ethers.Wallet(process.env.PRIVATE_KEY, controllerProvider);
+  controllerWallet = new ethers.Wallet(process.env.PRIVATE_KEY, controllerProvider);
   controller = new ethers.Contract(CONTROLLER_ADDRESS, controllerABI, controllerWallet);
+}
+
+// Sign commitment for controller (different domain than default)
+async function signControllerCommitment(commitment) {
+  const domain = {
+    name: 'ArcAgentController',
+    version: '1',
+    chainId: ARC_CONFIG.chainId,
+    verifyingContract: CONTROLLER_ADDRESS
+  };
+
+  const types = {
+    Commitment: [
+      { name: 'proofHash', type: 'bytes32' },
+      { name: 'decision', type: 'uint256' },
+      { name: 'timestamp', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' }
+    ]
+  };
+
+  return controllerWallet.signTypedData(domain, types, commitment);
 }
 
 // Circle Wallet state
@@ -353,7 +375,10 @@ app.post('/settle', async (req, res) => {
       timestamp: Math.floor(Date.now() / 1000),
       nonce: Date.now()
     };
-    const signature = await signCommitment(wallet, commitment);
+    // Use controller-specific signature if in controller mode
+    const signature = USE_CONTROLLER
+      ? await signControllerCommitment(commitment)
+      : await signCommitment(wallet, commitment);
 
     // Step 6: Execute transfer if approved
     let txHash = null;
