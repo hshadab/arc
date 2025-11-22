@@ -149,6 +149,19 @@ curl -X POST http://localhost:8619/settle \
 └────────────────────────┬────────────────────────────────┘
                          ▼
 ┌─────────────────────────────────────────────────────────┐
+│         Step 3: Transform to Model Features              │
+│                                                         │
+│   Compliance results become ONNX model inputs:          │
+│   • budget: 15 (approved) or 5 (denied)                 │
+│   • trust: 7 (approved) or 0 (denied)                   │
+│   • amount: 5 (approved) or 12 (denied)                 │
+│   • risk: 0 (low) or 1 (riskScore > 7)                  │
+│   • + velocity, day, time, category features            │
+│                                                         │
+│   Output: 8-feature vector for model inference          │
+└────────────────────────┬────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────┐
 │           Step 4: zkML Proof Generation                  │
 │                                                         │
 │   JOLT-Atlas Prover (~2.3 seconds)                      │
@@ -302,24 +315,12 @@ PRIVATE_KEY=your_key
 CIRCLE_API_KEY=TEST_API_KEY:xxx:xxx
 ```
 
-- Real Circle Compliance Engine
-- Actual sanctions screening
-- Production risk scores
-
-### Mode 3: Full Circle Integration
-
-Add Circle API for live compliance screening.
-
-```bash
-PRIVATE_KEY=your_key
-CIRCLE_API_KEY=TEST_API_KEY:xxx:xxx
-```
-
+- Real Circle Compliance Engine API
+- Actual sanctions screening against OFAC lists
+- Production-grade risk scores (0-10)
 - Agent owns wallet via private key (true ownership)
-- Real Circle Compliance Engine screening
-- Production-grade AML/CFT checks
 
-### Mode 4: Trustless Controller (Recommended)
+### Mode 3: Trustless Controller (Recommended)
 
 Deploy ArcAgentController for on-chain proof enforcement.
 

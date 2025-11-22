@@ -13,10 +13,21 @@ These demos use [JOLT-Atlas](https://github.com/ICME-Lab/jolt-atlas) to generate
 | [**Trustless USDC Spending Agent**](demos/trustless-usdc-spending-agent/) | zkML-proven USDC payments with [x402](https://www.x402.org/) micropayments | [OOAK](https://github.com/circlefin/circle-ooak) | 8616 |
 | [**Trustless USDC Compliance Agent**](demos/trustless-usdc-compliance-agent/) | Agent owns wallet, dual-sided compliance screening before every settlement | [Compliance Engine](https://www.circle.com/wallets/compliance-engine) | 8619 |
 
-### What These Demos Show
+### What Makes These Demos "Trustless"
 
-- **Trustless Spending**: Agent decisions are cryptographically proven (not just logged)
-- **Compliance**: AML/CFT screening on both sender and recipient via Circle Compliance Engine
+Traditional AI agents just log their decisions—you have to trust they did what they claim. These demos use **zkML proofs** to cryptographically prove:
+
+1. **The exact model ran**: Not a different model, not manipulated outputs
+2. **On the exact inputs**: Compliance screening results actually fed into the decision
+3. **Producing the exact output**: The AUTHORIZED/DENIED decision is authentic
+
+This means you can deploy AI agents from untrusted sources and still verify their behavior.
+
+### Core Features
+
+- **Cryptographic Proofs**: Every decision has a verifiable zkML proof (not just logs)
+- **On-Chain Audit Trail**: Proof hashes anchored to Arc blockchain
+- **Compliance Integration**: Circle Compliance Engine screening feeds into model decisions
 - **Wallet Ownership**: Agent owns wallet via private key - true ownership, no custodian
 
 ## Architecture
