@@ -22,8 +22,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Initialize x402 middleware
-const SERVICE_WALLET = new ethers.Wallet(process.env.PRIVATE_KEY || ethers.Wallet.createRandom().privateKey);
+// Initialize x402 middleware - PRIVATE_KEY is required for service wallet
+if (!process.env.PRIVATE_KEY) {
+  console.error('[ERROR] PRIVATE_KEY environment variable is required for zkML proof service');
+  console.error('[ERROR] Please set PRIVATE_KEY in your .env file');
+  process.exit(1);
+}
+const SERVICE_WALLET = new ethers.Wallet(process.env.PRIVATE_KEY);
 
 const x402 = createX402Middleware({
   rpcUrl: process.env.ARC_RPC_URL || 'https://rpc.testnet.arc.network',

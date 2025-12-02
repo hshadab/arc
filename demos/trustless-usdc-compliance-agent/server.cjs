@@ -5,6 +5,7 @@
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
+const { ethers } = require('ethers');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const { ZkmlClient } = require('../../shared/zkml-client/index.cjs');
@@ -14,8 +15,11 @@ const {
   getUsdcBalance,
   transferUsdc,
   signCommitment,
+  signControllerCommitment,
   ARC_CONFIG,
-  getTxExplorerUrl
+  getTxExplorerUrl,
+  EIP712_CONTROLLER_COMMITMENT_TYPES,
+  createControllerDomain
 } = require('../../shared/arc-utils/index.cjs');
 
 // ArcAgentController ABI
@@ -55,31 +59,14 @@ const USE_CONTROLLER = !!CONTROLLER_ADDRESS;
 let controller = null;
 let controllerWallet = null;
 if (USE_CONTROLLER) {
-  const { ethers } = require('ethers');
   const controllerProvider = new ethers.JsonRpcProvider(process.env.ARC_RPC_URL || ARC_CONFIG.rpcUrl);
   controllerWallet = new ethers.Wallet(process.env.PRIVATE_KEY, controllerProvider);
   controller = new ethers.Contract(CONTROLLER_ADDRESS, controllerABI, controllerWallet);
 }
 
-// Sign commitment for controller (different domain than default)
-async function signControllerCommitment(commitment) {
-  const domain = {
-    name: 'ArcAgentController',
-    version: '1',
-    chainId: ARC_CONFIG.chainId,
-    verifyingContract: CONTROLLER_ADDRESS
-  };
-
-  const types = {
-    Commitment: [
-      { name: 'proofHash', type: 'bytes32' },
-      { name: 'decision', type: 'uint256' },
-      { name: 'timestamp', type: 'uint256' },
-      { name: 'nonce', type: 'uint256' }
-    ]
-  };
-
-  return controllerWallet.signTypedData(domain, types, commitment);
+// Sign commitment for controller using shared utility
+async function signControllerCommitmentLocal(commitment) {
+  return signControllerCommitment(controllerWallet, commitment, CONTROLLER_ADDRESS);
 }
 
 // Circle Wallet state
@@ -180,7 +167,10 @@ console.log('====================================\n');
  * Screen address using Circle Compliance Engine
  * API Docs: https://developers.circle.com/api-reference/w3s/compliance/screen-address
  */
-async function screenAddress(address, chain = 'ETH-SEPOLIA') {
+// Default chain for Circle Compliance Engine (configurable via env)
+const COMPLIANCE_CHAIN = process.env.COMPLIANCE_CHAIN || 'ETH-SEPOLIA';
+
+async function screenAddress(address, chain = COMPLIANCE_CHAIN) {
   if (USE_LIVE_COMPLIANCE) {
     try {
       const response = await fetch(`${CIRCLE_API_URL}/compliance/screening/addresses`, {
@@ -259,8 +249,8 @@ async function screenAddress(address, chain = 'ETH-SEPOLIA') {
  * Mock compliance screening for demo
  */
 function mockComplianceScreen(address) {
-  // Simulate different risk levels based on address
-  const hash = crypto.createHash('md5').update(address).digest('hex');
+  // Simulate different risk levels based on address (using SHA256 for consistency)
+  const hash = crypto.createHash('sha256').update(address).digest('hex');
   const riskValue = parseInt(hash.substring(0, 2), 16);
 
   // 90% approval rate for demo
@@ -327,12 +317,17 @@ app.get('/health', async (req, res) => {
 app.get('/balance/:address', async (req, res) => {
   const { address } = req.params;
 
+  // Validate address format
+  if (!address || !ethers.isAddress(address)) {
+    return res.status(400).json({ error: 'Invalid Ethereum address format' });
+  }
+
   try {
     const balance = await getUsdcBalance(address);
     res.json({ address, balance: parseFloat(balance) });
   } catch (e) {
     console.error(`Balance check failed for ${address}:`, e.message);
-    res.json({ address, balance: 0 });
+    res.status(500).json({ address, balance: 0, error: e.message });
   }
 });
 
@@ -342,6 +337,10 @@ app.post('/screen', async (req, res) => {
 
   if (!address) {
     return res.status(400).json({ error: 'address required' });
+  }
+
+  if (!ethers.isAddress(address)) {
+    return res.status(400).json({ error: 'Invalid Ethereum address format' });
   }
 
   console.log(`[SCREEN] Checking address: ${address}`);
@@ -370,9 +369,17 @@ app.post('/settle', async (req, res) => {
     return res.status(400).json({ error: 'to and amount required' });
   }
 
+  if (!ethers.isAddress(to)) {
+    return res.status(400).json({ error: 'Invalid recipient address format' });
+  }
+
   const amountNum = parseFloat(amount);
   if (isNaN(amountNum) || amountNum <= 0) {
-    return res.status(400).json({ error: 'invalid amount' });
+    return res.status(400).json({ error: 'Invalid amount: must be a positive number' });
+  }
+
+  if (amountNum > 1000000) {
+    return res.status(400).json({ error: 'Amount exceeds maximum allowed (1,000,000 USDC)' });
   }
 
   // Redirect to streaming endpoint internally
@@ -386,6 +393,15 @@ app.get('/settle-stream', async (req, res) => {
 
   if (!to || !amount) {
     return res.status(400).json({ error: 'to and amount required' });
+  }
+
+  if (!ethers.isAddress(to)) {
+    return res.status(400).json({ error: 'Invalid recipient address format' });
+  }
+
+  const amountNum = parseFloat(amount);
+  if (isNaN(amountNum) || amountNum <= 0 || amountNum > 1000000) {
+    return res.status(400).json({ error: 'Invalid amount: must be positive and <= 1,000,000 USDC' });
   }
 
   // Set up SSE headers
@@ -512,7 +528,7 @@ async function handleSettle(req, res, sendEvent) {
       nonce: Date.now()
     };
     const signature = USE_CONTROLLER
-      ? await signControllerCommitment(commitment)
+      ? await signControllerCommitmentLocal(commitment)
       : await signCommitment(wallet, commitment);
     emitStep(5, 'complete', { commitment });
 
@@ -528,7 +544,6 @@ async function handleSettle(req, res, sendEvent) {
 
       if (USE_CONTROLLER && controller) {
         try {
-          const { ethers } = require('ethers');
           const amountWei = ethers.parseUnits(amount.toString(), 6);
           const normalizedTo = ethers.getAddress(to);
 
@@ -552,6 +567,18 @@ async function handleSettle(req, res, sendEvent) {
           console.log(`[SUCCESS] Controller TX: ${txHash} (gas: ${gasUsed}, price: ${effectiveGasPrice})`);
         } catch (txError) {
           console.error('[ERROR] Controller transfer failed:', txError.message);
+          console.log('[FALLBACK] Attempting direct EOA transfer...');
+          // Fallback to EOA transfer if controller fails
+          try {
+            const receipt = await transferUsdc(wallet, to, amount);
+            txHash = receipt.hash;
+            gasUsed = receipt.gasUsed ? Number(receipt.gasUsed) : null;
+            effectiveGasPrice = receipt.effectiveGasPrice ? Number(receipt.effectiveGasPrice) : null;
+            explorerUrl = getTxExplorerUrl(txHash);
+            console.log(`[SUCCESS] Fallback EOA TX: ${txHash}`);
+          } catch (fallbackError) {
+            console.error('[ERROR] Fallback transfer also failed:', fallbackError.message);
+          }
         }
       } else if (circleWalletId) {
         const circleResult = await circleWalletTransfer(to, amount);

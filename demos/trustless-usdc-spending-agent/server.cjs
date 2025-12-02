@@ -46,27 +46,24 @@ app.use((req, res, next) => {
 });
 
 // Config and defaults
-const ROOT = path.resolve(__dirname, '..');
 const RPC_URL = process.env.OOAK_RPC_URL || process.env.ARC_RPC_URL || 'https://rpc.testnet.arc.network';
-const USE_JOLT_ATTEST = process.env.USE_JOLT_ATTEST === 'true';
-// Simple 2-signal verifier (decision, confidence)
 const ARC_JOLT_VERIFIER_ADDRESS = process.env.ARC_JOLT_VERIFIER_ADDRESS || '';
-const ARC_JOLT_ATTESTOR = process.env.ARC_JOLT_ATTESTOR || '';
 const COMMITMENT_REGISTRY_ADDRESS = process.env.COMMITMENT_REGISTRY_ADDRESS || '';
 const SPEND_GATE_ADDRESS = process.env.SPEND_GATE_ADDRESS || '';
-// Optional JOLT prover
+// JOLT prover configuration
 const JOLT_PROVER_BIN = process.env.JOLT_PROVER_BIN || '';
-const JOLT_MODEL_PATH = process.env.JOLT_MODEL_PATH || path.resolve(ROOT, '..', 'zkml', 'jolt-atlas-fork', 'demo-models', 'simple_auth.onnx');
-const OOAK_ONNX_MODEL = process.env.OOAK_ONNX_MODEL || path.resolve(ROOT, '..', 'models', 'spending_model.onnx');
+const JOLT_MODEL_PATH = process.env.JOLT_MODEL_PATH || path.resolve(__dirname, '..', '..', 'jolt-atlas', 'onnx-tracer', 'models', 'authorization', 'network.onnx');
+const OOAK_ONNX_MODEL = process.env.OOAK_ONNX_MODEL || path.resolve(__dirname, '..', '..', 'models', 'spending_model.onnx');
 
-const rField = BigInt('21888242871839275222246405745257275088548364400416034343698204186575808495617');
+// BN254 scalar field modulus - used for zkSNARK proof hash conversion
+const BN254_SCALAR_FIELD = BigInt('21888242871839275222246405745257275088548364400416034343698204186575808495617');
 
 function sha256Hex(buf) {
   return crypto.createHash('sha256').update(buf).digest('hex');
 }
 function sha256ToField(buf) {
   const h = crypto.createHash('sha256').update(buf).digest();
-  const n = BigInt('0x' + h.toString('hex')) % rField;
+  const n = BigInt('0x' + h.toString('hex')) % BN254_SCALAR_FIELD;
   return n.toString();
 }
 
@@ -96,7 +93,6 @@ app.post('/api/zkml/prove', async (req, res) => {
     }
     if (!fs.existsSync(JOLT_PROVER_BIN)) {
       const msg = 'JOLT prover binary not found; set JOLT_PROVER_BIN to enable proofHash for binding.';
-      if (REQUIRE_BINDING) return res.status(400).json({ error: 'jolt_missing', message: msg });
       return res.status(200).json({ joltPresent: false, decision: Number(decision), confidence: Number(confidence), note: msg });
     }
     // Support two styles: llm_prover (--flags) or proof_json_output <model> <inputs...>
@@ -185,8 +181,6 @@ app.post('/api/zkml/prove', async (req, res) => {
     res.status(500).json({ error: String(e) });
   }
 });
-
-// Removed Groth16 endpoints; attestation/registry path only
 
 // JOLT attestation: sign proofHash with PRIVATE_KEY, verify on-chain via AttestedJoltVerifier
 app.post('/api/jolt/attest', async (req, res) => {
@@ -373,7 +367,7 @@ app.post('/api/approve', async (req, res) => {
   }
 });
 
-// Send USDC: on Arc send native USDC (value tx); else fallback to Base ERC20
+// Send USDC via SpendGate contract with zkML proof commitment
 app.post('/api/send-usdc', async (req, res) => {
   try {
     const { to, amount } = req.body || {};

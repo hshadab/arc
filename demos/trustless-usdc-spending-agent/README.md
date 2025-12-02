@@ -114,7 +114,7 @@ Tool Execution: send_usdc(wfid=approved)
 ## 📂 Project Structure
 
 ```
-node-ui/
+trustless-usdc-spending-agent/
 ├── server.cjs              # Main Express server (ONNX, blockchain, APIs)
 ├── zkml-proof-service.cjs  # HTTP 402 zkML proof service
 ├── x402-client.cjs         # x402 payment client
@@ -124,6 +124,7 @@ node-ui/
 │   ├── index.html          # Main UI with workflow visualization
 │   └── x402-ui-patch.js    # Payment tracker UI components
 ├── contracts/              # Smart contract artifacts
+├── docs/                   # Technical documentation
 ├── .env.example            # Environment template
 └── package.json            # Dependencies
 ```
@@ -189,11 +190,15 @@ For production use:
 
 ## 📚 Additional Documentation
 
-- `ONNX_MODEL_COMPATIBILITY.md` - **NEW**: Comprehensive model testing results and JOLT binary limitations
-- `FAST_MODE_IMPLEMENTATION.md` - Fast-mode proof extraction implementation
-- `ZKML_SETUP.md` - How to enable real JOLT-Atlas zkML proofs
-- `X402_README.md` - x402 protocol details
-- `X402_INTEGRATION_COMPLETE.md` - Integration notes and implementation guide
+Technical documentation is available in the `docs/` folder:
+
+- `docs/ONNX_MODEL_COMPATIBILITY.md` - Comprehensive model testing results and JOLT binary limitations
+- `docs/FAST_MODE_IMPLEMENTATION.md` - Fast-mode proof extraction implementation
+- `docs/ZKML_SETUP.md` - How to enable real JOLT-Atlas zkML proofs
+- `docs/ZKML_PERFORMANCE_ANALYSIS.md` - Performance benchmarks and analysis
+- `docs/X402_README.md` - x402 protocol details
+- `docs/X402_INTEGRATION_COMPLETE.md` - Integration notes and implementation guide
+- `docs/PREPROCESSING_TRADEOFF_ANALYSIS.md` - Input preprocessing trade-offs
 
 ## 🐛 Troubleshooting
 
