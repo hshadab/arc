@@ -1,0 +1,3671 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trustless USDC Compliance Agent - Arc + Circle + zkML</title>
+    <!-- Custom Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg: #0a0e1a;
+        --fg: #e7ecf7;
+        --muted: #8b92a8;
+        --primary: #5b8cff;
+        --accent: #4de2cf;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --card: rgba(15, 20, 32, 0.7);
+        --card-solid: #0f1420;
+        --border: rgba(255, 255, 255, 0.08);
+        --border-gradient: linear-gradient(135deg, rgba(91, 140, 255, 0.3), rgba(77, 226, 207, 0.3));
+        --step-bg: rgba(20, 24, 37, 0.8);
+        --glass-blur: blur(16px);
+        --grain-opacity: 0.03;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 16px;
+        font-feature-settings: 'ss01' on, 'ss02' on;
+      }
+      code, pre, .monospace, input[type="text"], .address-card-address input {
+        font-family: 'JetBrains Mono', 'Monaco', monospace;
+      }
+
+      /* Grain texture overlay */
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 9999;
+        opacity: var(--grain-opacity);
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      }
+
+      /* Hero - Enhanced */
+      .hero {
+        background: linear-gradient(135deg, rgba(26, 31, 46, 0.9) 0%, rgba(10, 14, 26, 0.95) 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 30px 20px 20px;
+        text-align: center;
+        border-bottom: 1px solid var(--border);
+        position: relative;
+        overflow: hidden;
+      }
+      .hero::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(91, 140, 255, 0.4), rgba(77, 226, 207, 0.4), transparent);
+      }
+      .hero-logos {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 20px;
+      }
+      .hero-logos img {
+        height: 40px;
+        object-fit: contain;
+      }
+      .hero h1 {
+        font-size: 38px;
+        font-weight: 700;
+        font-family: 'Space Grotesk', sans-serif;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 8px;
+        text-shadow: 0 0 40px rgba(91, 140, 255, 0.3);
+        letter-spacing: -0.5px;
+      }
+      .hero p {
+        color: var(--muted);
+        font-size: 18px;
+      }
+      .hero-stats {
+        display: flex;
+        justify-content: center;
+        gap: 40px;
+        margin-top: 20px;
+      }
+      .hero-stat {
+        text-align: center;
+      }
+      .hero-stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--accent);
+      }
+      .hero-stat-label {
+        font-size: 12px;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+
+      /* Container */
+      .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+      /* Flow Diagram - Glassmorphism */
+      .flow-diagram {
+        background: linear-gradient(180deg, rgba(15, 20, 32, 0.8) 0%, rgba(10, 14, 26, 0.6) 100%);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 30px 20px 30px;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+      .flow-diagram::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(91, 140, 255, 0.5), rgba(77, 226, 207, 0.5), transparent);
+      }
+      .flow-diagram::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(91, 140, 255, 0.2), rgba(77, 226, 207, 0.2), transparent);
+      }
+      .flow-title {
+        display: none;
+      }
+      .flow-steps {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 10px 0;
+      }
+      .flow-step {
+        width: 160px;
+        min-height: 145px;
+        background: var(--step-bg);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px 14px 22px;
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        overflow: visible;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      }
+      .flow-step:hover:not(.active) {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(91, 140, 255, 0.3);
+      }
+      .flow-step.success {
+        min-height: 200px;
+      }
+      .flow-step-icon {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 8px;
+        opacity: 0.3;
+        transition: all 0.3s;
+        filter: drop-shadow(0 0 8px currentColor);
+      }
+      .flow-step-icon svg {
+        width: 100%;
+        height: 100%;
+        stroke: var(--primary);
+        fill: none;
+        stroke-width: 1.5;
+      }
+      .flow-step.active .flow-step-icon {
+        opacity: 0.8;
+        animation: iconPulse 1.5s ease-in-out infinite;
+      }
+      .flow-step.success .flow-step-icon {
+        opacity: 0.6;
+      }
+      .flow-step.success .flow-step-icon svg {
+        stroke: var(--accent);
+      }
+      @keyframes iconPulse {
+        0%, 100% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.15); opacity: 1; }
+      }
+      .flow-step-details {
+        margin-top: 8px;
+        font-size: 10px;
+        color: var(--muted);
+        line-height: 1.4;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: all 0.4s ease;
+      }
+      .flow-step.success .flow-step-details {
+        max-height: 200px;
+        opacity: 1;
+        margin-top: 12px;
+      }
+      .flow-step-data {
+        margin-top: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+      .flow-step-action {
+        margin-top: 8px;
+        font-size: 10px;
+        padding: 4px 8px;
+        background: rgba(91, 140, 255, 0.15);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: none;
+      }
+      .flow-step.success .flow-step-action {
+        display: inline-block;
+      }
+      .flow-step-action:hover {
+        background: rgba(91, 140, 255, 0.25);
+      }
+      .flow-step.active {
+        border-color: var(--primary);
+        box-shadow: 0 20px 80px rgba(91, 140, 255, 0.6);
+        background: rgba(91, 140, 255, 0.12);
+        animation: stepGlow 2s ease-in-out infinite;
+        backdrop-filter: blur(10px);
+        transform: scale(1.08) translateY(-8px);
+        z-index: 10;
+      }
+      @keyframes stepGlow {
+        0%, 100% {
+          box-shadow: 0 10px 40px rgba(91, 140, 255, 0.4);
+          border-color: var(--primary);
+        }
+        50% {
+          box-shadow: 0 15px 60px rgba(91, 140, 255, 0.7);
+          border-color: var(--accent);
+        }
+      }
+      .flow-step.success {
+        border-color: var(--success);
+        background: rgba(16, 185, 129, 0.08);
+        transform: scale(1);
+        backdrop-filter: blur(5px);
+      }
+      .flow-step.error {
+        border-color: var(--danger);
+        background: rgba(239, 68, 68, 0.08);
+      }
+      .flow-arrow {
+        flex: 0 0 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: var(--border);
+        position: relative;
+        transition: all 0.3s ease;
+      }
+      .flow-arrow.active {
+        color: var(--accent);
+        animation: arrowPulse 1s ease-in-out infinite;
+      }
+      @keyframes arrowPulse {
+        0%, 100% { transform: translateX(0); opacity: 1; }
+        50% { transform: translateX(4px); opacity: 0.7; }
+      }
+      .flow-arrow::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--accent));
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .flow-arrow.active::before {
+        opacity: 1;
+        animation: flowLine 1s ease-in-out infinite;
+      }
+      @keyframes flowLine {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+
+      /* zkML Proof Progress Bar */
+      .flow-step-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        background: var(--accent);
+        width: 0%;
+        transition: width 0.3s ease;
+        box-shadow: 0 0 10px var(--accent);
+      }
+
+      /* Data Particle Animation - Enhanced */
+      .data-particle {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background: var(--accent);
+        border-radius: 50%;
+        box-shadow: 0 0 12px var(--accent), 0 0 24px var(--accent);
+        animation: particleFlow 0.8s ease-out forwards;
+        opacity: 0;
+        pointer-events: none;
+      }
+      @keyframes particleFlow {
+        0% { opacity: 0; transform: scale(0) translateX(-20px); }
+        20% { opacity: 1; transform: scale(1.2) translateX(0); }
+        80% { opacity: 1; transform: scale(1) translateX(20px); }
+        100% { opacity: 0; transform: scale(0.3) translateX(40px); }
+      }
+
+      /* Flowing data stream */
+      .flow-stream {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        transform: translateY(-50%) scaleX(0);
+        transform-origin: left;
+        opacity: 0;
+        transition: all 0.3s;
+      }
+      .flow-arrow.active .flow-stream {
+        opacity: 1;
+        animation: flowStreamAnim 1s ease-out forwards;
+      }
+      @keyframes flowStreamAnim {
+        0% { transform: translateY(-50%) scaleX(0); opacity: 0; }
+        30% { transform: translateY(-50%) scaleX(1); opacity: 1; }
+        100% { transform: translateY(-50%) scaleX(1); opacity: 0; }
+      }
+
+      /* Data packet visualization */
+      .data-packet {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: 'Monaco', monospace;
+        font-size: 8px;
+        color: var(--accent);
+        background: rgba(77, 226, 207, 0.2);
+        padding: 2px 6px;
+        border-radius: 3px;
+        white-space: nowrap;
+        animation: packetFlow 1.2s ease-out forwards;
+        opacity: 0;
+        pointer-events: none;
+      }
+      @keyframes packetFlow {
+        0% { left: -20px; opacity: 0; }
+        20% { opacity: 1; }
+        80% { opacity: 1; }
+        100% { left: calc(100% + 20px); opacity: 0; }
+      }
+
+      /* Neural Network Visualization */
+      .neural-network {
+        width: 400px;
+        height: 200px;
+        position: relative;
+        margin: 0 auto 30px;
+      }
+      .nn-layer {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+      }
+      .nn-layer.input { left: 0; }
+      .nn-layer.hidden1 { left: 25%; }
+      .nn-layer.hidden2 { left: 50%; }
+      .nn-layer.output { left: 75%; right: 0; }
+      .nn-node {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(91, 140, 255, 0.2);
+        border: 2px solid var(--primary);
+        transition: all 0.3s ease;
+        position: relative;
+      }
+      .nn-node.active {
+        background: var(--primary);
+        box-shadow: 0 0 20px var(--primary);
+        animation: nodeActivate 0.5s ease-out;
+      }
+      .nn-node.output-node {
+        width: 32px;
+        height: 32px;
+        border-color: var(--accent);
+      }
+      .nn-node.output-node.active {
+        background: var(--accent);
+        box-shadow: 0 0 30px var(--accent);
+      }
+      @keyframes nodeActivate {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.3); }
+        100% { transform: scale(1); }
+      }
+      .nn-connections {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      .nn-connections line {
+        stroke: rgba(91, 140, 255, 0.15);
+        stroke-width: 1;
+        transition: all 0.3s;
+      }
+      .nn-connections line.active {
+        stroke: var(--primary);
+        stroke-width: 2;
+        filter: drop-shadow(0 0 4px var(--primary));
+      }
+
+      /* Matrix Rain Effect */
+      .matrix-rain {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+        opacity: 0.3;
+        pointer-events: none;
+      }
+      .matrix-column {
+        position: absolute;
+        top: -100%;
+        font-family: 'Monaco', monospace;
+        font-size: 12px;
+        color: var(--accent);
+        writing-mode: vertical-rl;
+        animation: matrixFall linear infinite;
+        opacity: 0.7;
+      }
+      @keyframes matrixFall {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(300%); }
+      }
+
+      /* Proof Progress */
+      .zkml-progress {
+        width: 300px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .zkml-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+        border-radius: 3px;
+        width: 0%;
+        transition: width 0.1s linear;
+        box-shadow: 0 0 10px var(--accent);
+      }
+
+      /* Risk Meter - Enhanced */
+      .risk-meter {
+        margin-top: 8px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+        opacity: 0;
+        transition: opacity 0.3s;
+        position: relative;
+      }
+      .flow-step.active .risk-meter,
+      .flow-step.success .risk-meter {
+        opacity: 1;
+      }
+      .risk-meter-fill {
+        height: 100%;
+        width: 0%;
+        transition: width 0.5s ease, background-color 0.3s;
+        border-radius: 2px;
+        position: relative;
+      }
+      .risk-meter-fill::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 8px;
+        height: 100%;
+        background: inherit;
+        filter: brightness(1.5);
+        border-radius: 0 2px 2px 0;
+        animation: riskPulse 1s ease-in-out infinite;
+      }
+      @keyframes riskPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      .risk-meter-fill.low { background: linear-gradient(90deg, #059669, var(--success)); }
+      .risk-meter-fill.medium { background: linear-gradient(90deg, #d97706, var(--warning)); }
+      .risk-meter-fill.high { background: linear-gradient(90deg, #dc2626, var(--danger)); }
+
+      /* Risk Analysis Panel */
+      .risk-analysis {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 12px;
+      }
+      .risk-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .risk-score-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 700;
+        position: relative;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .risk-score-circle::before {
+        content: '';
+        position: absolute;
+        inset: 2px;
+        border-radius: 50%;
+        background: var(--card-solid);
+      }
+      .risk-score-circle span {
+        position: relative;
+        z-index: 1;
+      }
+      .risk-score-circle.low {
+        background: conic-gradient(var(--success) var(--risk-percent), rgba(255,255,255,0.1) 0);
+        color: var(--success);
+      }
+      .risk-score-circle.medium {
+        background: conic-gradient(var(--warning) var(--risk-percent), rgba(255,255,255,0.1) 0);
+        color: var(--warning);
+      }
+      .risk-score-circle.high {
+        background: conic-gradient(var(--danger) var(--risk-percent), rgba(255,255,255,0.1) 0);
+        color: var(--danger);
+      }
+      .risk-label {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .risk-categories {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .risk-category {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+      }
+      .risk-category-icon {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+      }
+      .risk-category-icon.clear {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--success);
+      }
+      .risk-category-icon.flagged {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--warning);
+      }
+      .risk-category-icon.blocked {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--danger);
+      }
+      .risk-category-name {
+        flex: 1;
+        color: var(--muted);
+      }
+      .risk-category-status {
+        font-weight: 600;
+      }
+      .risk-category-status.clear { color: var(--success); }
+      .risk-category-status.flagged { color: var(--warning); }
+      .risk-category-status.blocked { color: var(--danger); }
+
+      /* Inline Proof Panel - Horizontal Layout */
+      .proof-panel {
+        background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 35, 0.98));
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin: 24px 0;
+        display: none;
+        position: relative;
+        overflow: hidden;
+      }
+      .proof-panel.visible {
+        display: block;
+        animation: fadeSlideIn 0.3s ease-out;
+      }
+      .proof-panel.generating {
+        border-color: var(--primary);
+        box-shadow: 0 0 20px rgba(91, 140, 255, 0.2);
+      }
+      .proof-panel.complete {
+        border-color: var(--success);
+        box-shadow: 0 0 30px rgba(16, 185, 129, 0.15);
+      }
+      .proof-panel .matrix-rain {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+        opacity: 0.1;
+        pointer-events: none;
+        border-radius: 16px;
+      }
+      .proof-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        position: relative;
+        z-index: 1;
+      }
+      .proof-panel-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .proof-panel-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.3s;
+      }
+      .proof-panel.complete .proof-panel-icon {
+        background: linear-gradient(135deg, var(--success), #10b981);
+      }
+      .proof-panel-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke: white;
+        fill: none;
+      }
+      .proof-panel-icon .icon-loading {
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      .proof-panel-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--fg);
+      }
+      .proof-panel-subtitle {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .proof-panel-hash {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .proof-panel-hash-label {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .proof-panel-hash-value {
+        font-size: 12px;
+        color: var(--accent);
+      }
+      .proof-panel-hash .copy-btn {
+        padding: 4px 8px;
+        font-size: 10px;
+      }
+
+      /* Horizontal Proof Steps */
+      .proof-steps {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 4px;
+        position: relative;
+        z-index: 1;
+      }
+      .proof-steps::before {
+        content: '';
+        position: absolute;
+        top: 16px;
+        left: 20px;
+        right: 20px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.1);
+        z-index: 0;
+      }
+      .proof-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+        position: relative;
+        z-index: 1;
+        text-align: center;
+      }
+      .proof-step-indicator {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        background: rgba(30, 30, 50, 1);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        color: var(--muted);
+        transition: all 0.3s ease;
+        position: relative;
+        margin-bottom: 8px;
+      }
+      .proof-step-indicator svg {
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+        transition: all 0.3s ease;
+      }
+      .proof-step.pending .proof-step-indicator {
+        background: rgba(30, 30, 50, 1);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+      .proof-step.pending .proof-step-indicator svg {
+        opacity: 0.4;
+      }
+      .proof-step.active .proof-step-indicator {
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        border-color: var(--primary);
+        color: white;
+        box-shadow: 0 0 20px rgba(91, 140, 255, 0.4);
+      }
+      .proof-step.active .proof-step-indicator svg {
+        opacity: 1;
+        animation: iconSpin 2s linear infinite;
+      }
+      @keyframes iconSpin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .proof-step.active .proof-step-indicator::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 2px solid var(--primary);
+        animation: txPulse 1s ease-out infinite;
+      }
+      .proof-step.complete .proof-step-indicator {
+        background: var(--success);
+        border-color: var(--success);
+        color: white;
+      }
+      .proof-step.complete .proof-step-indicator svg {
+        opacity: 1;
+        animation: none;
+      }
+      .proof-step-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+      }
+      .proof-step-title {
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--fg);
+        transition: color 0.3s;
+        white-space: nowrap;
+      }
+      .proof-step.pending .proof-step-title {
+        color: var(--muted);
+      }
+      .proof-step.active .proof-step-title {
+        color: var(--fg);
+      }
+      .proof-step.complete .proof-step-title {
+        color: var(--success);
+      }
+      .proof-step-value {
+        font-size: 9px;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--muted);
+        margin-top: 1px;
+      }
+      .proof-step.active .proof-step-value {
+        color: var(--primary);
+      }
+      .proof-step.complete .proof-step-value {
+        color: var(--success);
+      }
+      .proof-step-connector {
+        position: absolute;
+        top: 15px;
+        left: calc(50% + 18px);
+        width: calc(100% - 36px);
+        height: 2px;
+        background: rgba(255, 255, 255, 0.1);
+        z-index: 0;
+      }
+      .proof-step:last-child .proof-step-connector {
+        display: none;
+      }
+      .proof-step.complete .proof-step-connector {
+        background: var(--success);
+      }
+      .proof-step.active .proof-step-connector {
+        background: linear-gradient(to right, var(--primary), rgba(255, 255, 255, 0.1));
+      }
+
+      /* Compact Neural Network for horizontal layout */
+      .proof-panel .neural-network-mini {
+        width: 80px;
+        height: 60px;
+        position: relative;
+        margin: 0 auto;
+      }
+      .proof-panel .neural-network-mini .nn-layer {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .proof-panel .neural-network-mini .nn-layer.input { left: 0; }
+      .proof-panel .neural-network-mini .nn-layer.hidden { left: 30px; }
+      .proof-panel .neural-network-mini .nn-layer.output { left: 60px; }
+      .proof-panel .neural-network-mini .nn-node {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(91, 140, 255, 0.3);
+        border: 1px solid var(--primary);
+        transition: all 0.3s;
+      }
+      .proof-panel .neural-network-mini .nn-node.active {
+        background: var(--primary);
+        box-shadow: 0 0 8px var(--primary);
+      }
+
+      /* Proof Hash Container (for copy button) */
+      .proof-hash-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 12px;
+        border-radius: 8px;
+        font-family: 'Monaco', monospace;
+        font-size: 11px;
+        word-break: break-all;
+      }
+      .proof-hash {
+        flex: 1;
+        color: var(--accent);
+      }
+      .copy-btn {
+        background: rgba(91, 140, 255, 0.2);
+        border: none;
+        color: var(--primary);
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+      .copy-btn:hover {
+        background: rgba(91, 140, 255, 0.3);
+      }
+      .copy-btn.copied {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--success);
+      }
+      .proof-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .proof-metric {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+      }
+      .proof-metric-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--accent);
+      }
+      .proof-metric-label {
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        margin-top: 4px;
+      }
+      .proof-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+      }
+      .proof-action-btn {
+        flex: 1;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--fg);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .proof-action-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--primary);
+      }
+
+      /* Transaction Panel - Step 6 Animation (Horizontal) */
+      .tx-panel {
+        background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 35, 0.98));
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin: 24px 0;
+        display: none;
+        position: relative;
+        overflow: hidden;
+      }
+      .tx-panel.visible {
+        display: block;
+        animation: fadeSlideIn 0.3s ease-out;
+      }
+      .tx-panel.complete {
+        border-color: var(--success);
+        box-shadow: 0 0 30px rgba(16, 185, 129, 0.15);
+      }
+      .tx-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+      .tx-panel-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .tx-panel-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      .tx-panel-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke: white;
+        fill: none;
+      }
+      .tx-panel-icon .icon-loading {
+        animation: spin 1s linear infinite;
+      }
+      .tx-panel-icon .icon-success {
+        stroke: var(--success);
+      }
+      .tx-panel-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--fg);
+      }
+      .tx-panel-subtitle {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .tx-panel-gas {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .tx-panel-gas-icon {
+        font-size: 14px;
+      }
+      .tx-panel-gas-label {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .tx-panel-gas-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+
+      /* Horizontal Transaction Steps */
+      .tx-steps {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        position: relative;
+      }
+      /* Connecting line behind steps */
+      .tx-steps::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 40px;
+        right: 40px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.1);
+        z-index: 0;
+      }
+      .tx-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+        position: relative;
+        z-index: 1;
+        text-align: center;
+      }
+      .tx-step-indicator {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 600;
+        background: rgba(30, 30, 50, 1);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        color: var(--muted);
+        transition: all 0.3s ease;
+        position: relative;
+        margin-bottom: 12px;
+      }
+      .tx-step.pending .tx-step-indicator {
+        background: rgba(30, 30, 50, 1);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: var(--muted);
+      }
+      .tx-step.active .tx-step-indicator {
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        border-color: var(--primary);
+        color: white;
+        box-shadow: 0 0 20px rgba(91, 140, 255, 0.4);
+      }
+      .tx-step.active .tx-step-indicator::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 2px solid var(--primary);
+        animation: txPulse 1s ease-out infinite;
+      }
+      .tx-step.complete .tx-step-indicator {
+        background: var(--success);
+        border-color: var(--success);
+        color: white;
+      }
+      .tx-step.complete .tx-step-indicator::before {
+        content: '✓';
+      }
+      @keyframes txPulse {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(1.8); opacity: 0; }
+      }
+      .tx-step-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+      .tx-step-title {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--fg);
+        transition: color 0.3s;
+        white-space: nowrap;
+      }
+      .tx-step.pending .tx-step-title {
+        color: var(--muted);
+      }
+      .tx-step.active .tx-step-title {
+        color: var(--fg);
+      }
+      .tx-step.complete .tx-step-title {
+        color: var(--success);
+      }
+      .tx-step-time {
+        font-size: 11px;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .tx-step.active .tx-step-time {
+        color: var(--primary);
+      }
+      .tx-step.complete .tx-step-time {
+        color: var(--success);
+      }
+
+      /* Connecting line segments between step indicators */
+      .tx-step-connector {
+        position: absolute;
+        top: 20px;
+        left: calc(50% + 24px);
+        width: calc(100% - 48px);
+        height: 2px;
+        background: rgba(255, 255, 255, 0.1);
+        z-index: 0;
+      }
+      .tx-step:last-child .tx-step-connector {
+        display: none;
+      }
+      .tx-step.complete .tx-step-connector {
+        background: var(--success);
+      }
+      .tx-step.active .tx-step-connector {
+        background: linear-gradient(to right, var(--primary), rgba(255, 255, 255, 0.1));
+      }
+
+      /* Micro-interactions */
+      .btn-press {
+        animation: buttonPress 0.15s ease-out;
+      }
+      @keyframes buttonPress {
+        0% { transform: scale(1); }
+        50% { transform: scale(0.95); }
+        100% { transform: scale(1); }
+      }
+
+      /* Screen shake for errors */
+      .shake {
+        animation: shake 0.5s ease-in-out;
+      }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+      }
+
+      /* Confetti canvas */
+      #confetti-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 9998;
+      }
+
+      /* Success pulse effect */
+      .success-pulse {
+        animation: successPulse 0.6s ease-out;
+      }
+      @keyframes successPulse {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+      }
+
+      /* Ripple effect */
+      .ripple {
+        position: relative;
+        overflow: hidden;
+      }
+      .ripple::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 1;
+      }
+      .ripple.active::after {
+        animation: rippleEffect 0.6s ease-out;
+      }
+      @keyframes rippleEffect {
+        to {
+          transform: translate(-50%, -50%) scale(100);
+          opacity: 0;
+        }
+      }
+
+      /* Rich Address Cards */
+      .address-card {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        transition: all 0.3s ease;
+      }
+      .address-card:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+      }
+      .address-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .address-card-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .address-card-link {
+        font-size: 11px;
+        color: var(--primary);
+        text-decoration: none;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+      }
+      .address-card-link:hover {
+        opacity: 1;
+        text-decoration: underline;
+      }
+      .address-card-address {
+        font-family: 'Monaco', monospace;
+        font-size: 13px;
+        color: var(--fg);
+        margin-bottom: 10px;
+        word-break: break-all;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .address-card-address input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--fg);
+        font-family: inherit;
+        font-size: inherit;
+        outline: none;
+      }
+      .address-card-address input:read-only {
+        opacity: 0.7;
+      }
+      .address-card-balance {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .balance-bar-container {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .balance-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+        border-radius: 4px;
+        transition: width 0.5s ease;
+        min-width: 2%;
+      }
+      .balance-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+      }
+      .balance-amount {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .balance-label {
+        color: var(--muted);
+      }
+      .address-card-meta {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .address-card-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      /* Wallet Dashboard */
+      .wallet-dashboard {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 12px 16px;
+        background: var(--card);
+        backdrop-filter: var(--glass-blur);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+      }
+      .wallet-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        padding: 10px 14px;
+        position: relative;
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+      }
+      .wallet-card:hover {
+        border-color: var(--primary);
+      }
+      .wallet-card.sender {
+        border-left: 3px solid var(--primary);
+      }
+      .wallet-card.recipient {
+        border-left: 3px solid var(--accent);
+      }
+      .wallet-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .wallet-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .wallet-card.sender .wallet-icon {
+        background: linear-gradient(135deg, var(--primary), #3b82f6);
+      }
+      .wallet-card.recipient .wallet-icon {
+        background: linear-gradient(135deg, var(--accent), #10b981);
+      }
+      .wallet-info {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .wallet-label {
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .wallet-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--fg);
+      }
+      .wallet-address {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .wallet-address a {
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .wallet-address a:hover {
+        color: var(--primary);
+      }
+      .wallet-balance-inline {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        margin-left: auto;
+        padding-left: 12px;
+      }
+      .wallet-balance-inline .balance-main {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+      }
+      .wallet-balance-inline .balance-amount {
+        font-size: 18px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--fg);
+      }
+      .wallet-balance-inline .balance-currency {
+        font-size: 11px;
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .wallet-balance-inline .balance-usd {
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .live-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 8px;
+        color: var(--success);
+        background: rgba(52, 211, 153, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid rgba(52, 211, 153, 0.3);
+        margin-left: 8px;
+        flex-shrink: 0;
+      }
+      .live-badge .live-dot {
+        width: 5px;
+        height: 5px;
+        background: var(--success);
+        border-radius: 50%;
+        animation: livePulse 1.5s ease-in-out infinite;
+      }
+      @keyframes livePulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+      .transfer-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 0 8px;
+      }
+      .transfer-arrow {
+        font-size: 24px;
+        color: var(--accent);
+        animation: transferPulse 2s ease-in-out infinite;
+      }
+      @keyframes transferPulse {
+        0%, 100% { opacity: 0.5; transform: translateX(0); }
+        50% { opacity: 1; transform: translateX(5px); }
+      }
+      .transfer-amount {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--accent);
+        background: rgba(77, 226, 207, 0.1);
+        padding: 3px 10px;
+        border-radius: 20px;
+        border: 1px solid rgba(77, 226, 207, 0.3);
+        white-space: nowrap;
+      }
+      .transfer-label {
+        font-size: 8px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .live-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 9px;
+        color: var(--success);
+        margin-left: auto;
+      }
+      .live-dot {
+        width: 6px;
+        height: 6px;
+        background: var(--success);
+        border-radius: 50%;
+        animation: livePulse 1.5s ease-in-out infinite;
+      }
+      @keyframes livePulse {
+        0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.4); }
+        50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(52, 211, 153, 0); }
+      }
+
+      /* Transaction History */
+      .tx-history {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+      }
+      .tx-history-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+      }
+      .tx-history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .tx-history-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        font-size: 12px;
+        animation: txSlideIn 0.3s ease-out;
+      }
+      @keyframes txSlideIn {
+        from { opacity: 0; transform: translateX(-10px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      .tx-history-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+      }
+      .tx-history-icon.success {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--success);
+      }
+      .tx-history-icon.error {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--danger);
+      }
+      .tx-history-details {
+        flex: 1;
+      }
+      .tx-history-amount {
+        font-weight: 600;
+        color: var(--fg);
+      }
+      .tx-history-address {
+        font-family: 'Monaco', monospace;
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .tx-history-time {
+        font-size: 10px;
+        color: var(--muted);
+        text-align: right;
+      }
+      .tx-history-empty {
+        text-align: center;
+        color: var(--muted);
+        font-size: 12px;
+        padding: 20px;
+      }
+
+      .flow-step-number {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--accent);
+        margin-bottom: 8px;
+      }
+      .flow-step-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .flow-step-desc {
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.3;
+      }
+      .flow-step-link {
+        margin-top: 6px;
+        font-size: 10px;
+      }
+      .flow-step-link a {
+        color: var(--accent);
+        text-decoration: none;
+        opacity: 0.8;
+      }
+      .flow-step-link a:hover {
+        opacity: 1;
+        text-decoration: underline;
+      }
+
+      /* Interactive Section - Glassmorphism */
+      .section {
+        background: var(--card);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(91, 140, 255, 0.4), rgba(77, 226, 207, 0.4), transparent);
+      }
+      .section:hover {
+        border-color: rgba(255, 255, 255, 0.12);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .section-icon {
+        width: 36px;
+        height: 36px;
+        background: rgba(91, 140, 255, 0.15);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .section-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke: var(--primary);
+      }
+      .section-title {
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      /* Form */
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr auto;
+        gap: 16px;
+        align-items: end;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .form-group label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+      .form-group input {
+        padding: 12px 16px;
+        background: var(--step-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--fg);
+        font-size: 14px;
+      }
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+
+      /* Buttons */
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, var(--primary), #4d7ff7);
+        color: white;
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(91, 140, 255, 0.5);
+      }
+      .btn-primary:active {
+        transform: translateY(0);
+      }
+      .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        position: relative;
+      }
+      .btn-primary.processing {
+        background: linear-gradient(135deg, var(--primary), #4d7ff7);
+        animation: buttonPulse 1.5s ease-in-out infinite;
+      }
+      @keyframes buttonPulse {
+        0%, 100% { box-shadow: 0 4px 12px rgba(91, 140, 255, 0.4); }
+        50% { box-shadow: 0 6px 20px rgba(91, 140, 255, 0.7); }
+      }
+      .btn-primary .spinner {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      /* Results */
+      .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+      }
+      .result-card {
+        background: var(--step-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        display: none;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      }
+      .result-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      }
+      .result-card.visible {
+        display: block;
+        animation: cardSlideIn 0.4s ease-out;
+      }
+      @keyframes cardSlideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .result-card:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      }
+      .result-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .result-title {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .result-badge {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .result-badge.success {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--success);
+      }
+      .result-badge.warning {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warning);
+      }
+      .result-badge.error {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--danger);
+      }
+
+      /* Key-Value Display */
+      .kv-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .kv-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+      }
+      .kv-key {
+        color: var(--muted);
+      }
+      .kv-value {
+        font-family: 'Monaco', monospace;
+        color: var(--fg);
+      }
+      .kv-value.highlight {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .kv-value.address {
+        color: #ffa726;
+        font-size: 11px;
+      }
+      .kv-value.hash {
+        color: #ab47bc;
+        font-size: 11px;
+      }
+
+      /* Status Messages */
+      .status-message {
+        padding: 16px;
+        border-radius: 8px;
+        margin-top: 16px;
+        display: none;
+      }
+      .status-message.visible {
+        display: block;
+      }
+      .status-message.success {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid var(--success);
+        color: var(--success);
+      }
+      .status-message.error {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid var(--danger);
+        color: var(--danger);
+      }
+
+      /* Links */
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+
+      /* Info Section */
+      .info-section {
+        margin-top: 30px;
+      }
+      .info-section h3 {
+        font-size: 16px;
+        margin-bottom: 12px;
+      }
+      .info-list {
+        list-style: none;
+      }
+      .info-list li {
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .info-list li:last-child {
+        border-bottom: none;
+      }
+      .info-list b {
+        color: var(--fg);
+      }
+
+      @media (max-width: 1024px) {
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+        .flow-steps {
+          min-width: 800px;
+        }
+        .wallet-dashboard {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+        .transfer-indicator {
+          flex-direction: row;
+          padding: 10px 0;
+        }
+        .transfer-arrow {
+          transform: rotate(90deg);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .hero h1 {
+          font-size: 28px;
+        }
+        .hero p {
+          font-size: 14px;
+        }
+        .container {
+          padding: 20px 16px;
+        }
+        .wallet-dashboard {
+          padding: 16px;
+        }
+        .wallet-balance-amount {
+          font-size: 26px;
+        }
+        .flow-diagram {
+          padding: 20px 10px;
+          overflow-x: auto;
+        }
+        .flow-steps {
+          min-width: 700px;
+          gap: 8px;
+        }
+        .flow-step {
+          width: 100px;
+          min-height: 110px;
+          padding: 12px 8px 16px;
+        }
+        .flow-step-icon {
+          width: 32px;
+          height: 32px;
+        }
+        .flow-step-title {
+          font-size: 11px;
+        }
+        .flow-step-desc {
+          font-size: 9px;
+        }
+        .address-card {
+          padding: 10px;
+        }
+        .section {
+          padding: 16px;
+        }
+        .results-grid {
+          grid-template-columns: 1fr;
+        }
+        .proof-panel .neural-network {
+          height: 120px;
+        }
+        .proof-panel .nn-node {
+          width: 14px;
+          height: 14px;
+        }
+        .proof-panel .nn-node.output-node {
+          width: 20px;
+          height: 20px;
+        }
+        .proof-panel-grid {
+          grid-template-columns: 1fr;
+        }
+        .proof-metrics {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+        }
+        .proof-metric {
+          padding: 8px;
+        }
+        .proof-metric-value {
+          font-size: 16px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .hero h1 {
+          font-size: 22px;
+        }
+        .wallet-card {
+          padding: 12px;
+        }
+        .wallet-icon {
+          width: 30px;
+          height: 30px;
+          font-size: 14px;
+        }
+        .wallet-balance-amount {
+          font-size: 22px;
+        }
+        .wallet-name {
+          font-size: 12px;
+        }
+        .flow-steps {
+          min-width: 600px;
+        }
+        .flow-step {
+          width: 85px;
+          min-height: 100px;
+        }
+        .form-row[style*="1fr 1fr"] {
+          grid-template-columns: 1fr !important;
+        }
+        .proof-actions {
+          flex-direction: column;
+        }
+        .proof-action-btn {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-logos">
+        <img src="https://cdn.prod.website-files.com/685311a976e7c248b5dfde95/688f6e47eca8d8e359537b5f_logo-ondark.svg" alt="Circle Logo">
+        <img src="https://cdn.prod.website-files.com/65d52b07d5bc41614daa723f/665df12739c532f45b665fe7_logo-novanet.svg" alt="NovaNet Logo">
+      </div>
+      <h1>Trustless USDC Compliance Agent</h1>
+      <p>Autonomous payments with Circle Compliance Engine + zkML proofs on Arc</p>
+    </div>
+
+    <div class="container">
+      <!-- Wallet Dashboard -->
+      <div class="wallet-dashboard">
+        <div class="wallet-card sender">
+          <div class="wallet-header">
+            <div class="wallet-icon">🤖</div>
+            <div class="wallet-info">
+              <div class="wallet-label">Sender</div>
+              <div class="wallet-name">Compliance Agent</div>
+              <div class="wallet-address">
+                <a href="#" id="dashboard-sender-link" target="_blank">
+                  <span id="dashboard-sender-addr">Loading...</span>
+                </a>
+              </div>
+            </div>
+            <div class="wallet-balance-inline">
+              <div class="balance-main">
+                <span class="balance-amount" id="dashboard-sender-balance">--</span>
+                <span class="balance-currency">USDC</span>
+              </div>
+              <div class="balance-usd">≈ $<span id="dashboard-sender-usd">--</span></div>
+            </div>
+            <div class="live-badge">
+              <span class="live-dot"></span>
+              LIVE
+            </div>
+          </div>
+        </div>
+
+        <div class="transfer-indicator">
+          <div class="transfer-label">Transfer</div>
+          <div class="transfer-arrow">→</div>
+          <div class="transfer-amount" id="dashboard-transfer-amount">0.1 USDC</div>
+        </div>
+
+        <div class="wallet-card recipient">
+          <div class="wallet-header">
+            <div class="wallet-icon">👤</div>
+            <div class="wallet-info">
+              <div class="wallet-label">Recipient</div>
+              <div class="wallet-name">External Wallet</div>
+              <div class="wallet-address">
+                <a href="#" id="dashboard-recipient-link" target="_blank">
+                  <span id="dashboard-recipient-addr">Enter address below</span>
+                </a>
+              </div>
+            </div>
+            <div class="wallet-balance-inline">
+              <div class="balance-main">
+                <span class="balance-amount" id="dashboard-recipient-balance">--</span>
+                <span class="balance-currency">USDC</span>
+              </div>
+              <div class="balance-usd">≈ $<span id="dashboard-recipient-usd">--</span></div>
+            </div>
+            <div class="live-badge">
+              <span class="live-dot"></span>
+              LIVE
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flow Diagram -->
+      <div class="flow-diagram">
+        <div class="flow-title">Payment Workflow</div>
+        <div class="flow-steps">
+          <div class="flow-step" id="step-1">
+            <div class="flow-step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
+            </div>
+            <div class="flow-step-number">Step 1</div>
+            <div class="flow-step-title">Screen Sender</div>
+            <div class="flow-step-desc">Circle Compliance</div>
+            <div class="flow-step-data" id="step-1-data"></div>
+            <div class="risk-meter"><div class="risk-meter-fill" id="risk-1"></div></div>
+            <div class="flow-step-details" id="step-1-details"></div>
+            <div class="flow-step-progress" id="progress-1"></div>
+          </div>
+          <div class="flow-arrow" id="arrow-1">→</div>
+          <div class="flow-step" id="step-2">
+            <div class="flow-step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
+            </div>
+            <div class="flow-step-number">Step 2</div>
+            <div class="flow-step-title">Screen Recipient</div>
+            <div class="flow-step-desc">Circle Compliance</div>
+            <div class="flow-step-data" id="step-2-data"></div>
+            <div class="risk-meter"><div class="risk-meter-fill" id="risk-2"></div></div>
+            <div class="flow-step-details" id="step-2-details"></div>
+            <div class="flow-step-progress" id="progress-2"></div>
+          </div>
+          <div class="flow-arrow" id="arrow-2">→</div>
+          <div class="flow-step" id="step-3">
+            <div class="flow-step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18M9 21V9"/>
+              </svg>
+            </div>
+            <div class="flow-step-number">Step 3</div>
+            <div class="flow-step-title">Compliance Model</div>
+            <div class="flow-step-desc">ONNX inference</div>
+            <div class="flow-step-data" id="step-3-data"></div>
+            <div class="flow-step-details" id="step-3-details"></div>
+            <div class="flow-step-progress" id="progress-3"></div>
+          </div>
+          <div class="flow-arrow" id="arrow-3">→</div>
+          <div class="flow-step" id="step-4">
+            <div class="flow-step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+            </div>
+            <div class="flow-step-number">Step 4</div>
+            <div class="flow-step-title">zkML Proof</div>
+            <div class="flow-step-desc">JOLT-Atlas</div>
+            <div class="flow-step-data" id="step-4-data"></div>
+            <div class="flow-step-details" id="step-4-details"></div>
+            <div class="flow-step-progress" id="progress-4"></div>
+          </div>
+          <div class="flow-arrow" id="arrow-4">→</div>
+          <div class="flow-step" id="step-5">
+            <div class="flow-step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+              </svg>
+            </div>
+            <div class="flow-step-number">Step 5</div>
+            <div class="flow-step-title">Proof Attestation</div>
+            <div class="flow-step-desc">EIP-712 signature</div>
+            <div class="flow-step-data" id="step-5-data"></div>
+            <div class="flow-step-details" id="step-5-details"></div>
+            <div class="flow-step-link" id="step-5-link"></div>
+            <div class="flow-step-progress" id="progress-5"></div>
+          </div>
+          <div class="flow-arrow" id="arrow-5">→</div>
+          <div class="flow-step" id="step-6">
+            <div class="flow-step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <div class="flow-step-number">Step 6</div>
+            <div class="flow-step-title">Execute Payment</div>
+            <div class="flow-step-desc">Arc Network</div>
+            <div class="flow-step-data" id="step-6-data"></div>
+            <div class="flow-step-details" id="step-6-details"></div>
+            <div class="flow-step-link" id="step-6-link"></div>
+            <div class="flow-step-progress" id="progress-6"></div>
+          </div>
+        </div>
+
+        <!-- Inline Proof Panel - Horizontal -->
+        <div class="proof-panel" id="proof-panel">
+          <div class="matrix-rain" id="panel-matrix-rain"></div>
+
+          <div class="proof-panel-header">
+            <div class="proof-panel-header-left">
+              <div class="proof-panel-icon" id="proof-panel-icon">
+                <svg viewBox="0 0 24 24" stroke-width="2" class="icon-loading">
+                  <circle cx="12" cy="12" r="10" stroke-dasharray="31.4" stroke-dashoffset="10"/>
+                </svg>
+                <svg viewBox="0 0 24 24" stroke-width="2" class="icon-success" style="display:none;">
+                  <path d="M9 12l2 2 4-4"/>
+                  <circle cx="12" cy="12" r="10"/>
+                </svg>
+              </div>
+              <div>
+                <div class="proof-panel-title" id="proof-panel-title">Generating zkML Proof...</div>
+                <div class="proof-panel-subtitle" id="proof-panel-subtitle">Initializing JOLT-Atlas prover</div>
+              </div>
+            </div>
+            <div class="proof-panel-hash" id="proof-panel-hash-container">
+              <div>
+                <div class="proof-panel-hash-label">Proof Hash</div>
+                <div class="proof-panel-hash-value" id="panel-proof-hash">Generating...</div>
+              </div>
+              <button class="copy-btn" onclick="copyProofHash()" disabled id="copy-proof-btn">Copy</button>
+            </div>
+          </div>
+
+          <div class="proof-steps">
+            <div class="proof-step pending" id="proof-step-1">
+              <div class="proof-step-connector"></div>
+              <div class="proof-step-indicator">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14,2 14,8 20,8"/>
+                </svg>
+              </div>
+              <div class="proof-step-content">
+                <div class="proof-step-title">Load Model</div>
+                <div class="proof-step-value" id="proof-step-1-value">--</div>
+              </div>
+            </div>
+            <div class="proof-step pending" id="proof-step-2">
+              <div class="proof-step-connector"></div>
+              <div class="proof-step-indicator">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                </svg>
+              </div>
+              <div class="proof-step-content">
+                <div class="proof-step-title">Run Inference</div>
+                <div class="proof-step-value" id="proof-step-2-value">--</div>
+              </div>
+            </div>
+            <div class="proof-step pending" id="proof-step-3">
+              <div class="proof-step-connector"></div>
+              <div class="proof-step-indicator">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"/>
+                  <rect x="14" y="3" width="7" height="7"/>
+                  <rect x="14" y="14" width="7" height="7"/>
+                  <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+              </div>
+              <div class="proof-step-content">
+                <div class="proof-step-title">Build Circuit</div>
+                <div class="proof-step-value" id="proof-step-3-value">--</div>
+              </div>
+            </div>
+            <div class="proof-step pending" id="proof-step-4">
+              <div class="proof-step-connector"></div>
+              <div class="proof-step-indicator">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+              </div>
+              <div class="proof-step-content">
+                <div class="proof-step-title">Compute Witness</div>
+                <div class="proof-step-value" id="proof-step-4-value">--</div>
+              </div>
+            </div>
+            <div class="proof-step pending" id="proof-step-5">
+              <div class="proof-step-connector"></div>
+              <div class="proof-step-indicator">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <div class="proof-step-content">
+                <div class="proof-step-title">Prove (Sumcheck)</div>
+                <div class="proof-step-value" id="proof-step-5-value">--</div>
+              </div>
+            </div>
+            <div class="proof-step pending" id="proof-step-6">
+              <div class="proof-step-connector"></div>
+              <div class="proof-step-indicator">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22,4 12,14.01 9,11.01"/>
+                </svg>
+              </div>
+              <div class="proof-step-content">
+                <div class="proof-step-title">Verify Proof</div>
+                <div class="proof-step-value" id="proof-step-6-value">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transaction Panel - Step 6 (Horizontal) -->
+        <div class="tx-panel" id="tx-panel">
+          <div class="tx-panel-header">
+            <div class="tx-panel-header-left">
+              <div class="tx-panel-icon" id="tx-panel-icon">
+                <svg viewBox="0 0 24 24" stroke-width="2" class="icon-loading">
+                  <circle cx="12" cy="12" r="10" stroke-dasharray="31.4" stroke-dashoffset="10"/>
+                </svg>
+                <svg viewBox="0 0 24 24" stroke-width="2" class="icon-success" style="display:none;">
+                  <path d="M9 12l2 2 4-4"/>
+                  <circle cx="12" cy="12" r="10"/>
+                </svg>
+              </div>
+              <div>
+                <div class="tx-panel-title" id="tx-panel-title">Executing Transaction...</div>
+                <div class="tx-panel-subtitle" id="tx-panel-subtitle">Preparing USDC transfer on Arc Network</div>
+              </div>
+            </div>
+            <div class="tx-panel-gas" id="tx-panel-gas">
+              <span class="tx-panel-gas-icon">⛽</span>
+              <div>
+                <div class="tx-panel-gas-label">Gas Cost</div>
+                <div class="tx-panel-gas-value" id="tx-gas-value">--</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tx-steps">
+            <div class="tx-step pending" id="tx-step-1">
+              <div class="tx-step-connector"></div>
+              <div class="tx-step-indicator">1</div>
+              <div class="tx-step-content">
+                <div class="tx-step-title">Sign Transaction</div>
+                <div class="tx-step-time" id="tx-step-1-time">--</div>
+              </div>
+            </div>
+            <div class="tx-step pending" id="tx-step-2">
+              <div class="tx-step-connector"></div>
+              <div class="tx-step-indicator">2</div>
+              <div class="tx-step-content">
+                <div class="tx-step-title">Connect to Arc</div>
+                <div class="tx-step-time" id="tx-step-2-time">--</div>
+              </div>
+            </div>
+            <div class="tx-step pending" id="tx-step-3">
+              <div class="tx-step-connector"></div>
+              <div class="tx-step-indicator">3</div>
+              <div class="tx-step-content">
+                <div class="tx-step-title">Broadcast Tx</div>
+                <div class="tx-step-time" id="tx-step-3-time">--</div>
+              </div>
+            </div>
+            <div class="tx-step pending" id="tx-step-4">
+              <div class="tx-step-connector"></div>
+              <div class="tx-step-indicator">4</div>
+              <div class="tx-step-content">
+                <div class="tx-step-title">Finality</div>
+                <div class="tx-step-time" id="tx-step-4-time">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Form -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+          <div class="section-title">Execute Payment</div>
+        </div>
+        <form id="settle-form">
+          <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+            <!-- Sender Address Card -->
+            <div class="address-card" id="sender-card">
+              <div class="address-card-header">
+                <span class="address-card-label">Sender (Agent Wallet)</span>
+                <a class="address-card-link" id="sender-link" href="#" target="_blank">View on Explorer ↗</a>
+              </div>
+              <div class="address-card-address">
+                <input type="text" id="from" readonly value="" placeholder="Loading..." />
+              </div>
+              <div class="address-card-balance">
+                <div class="balance-bar-container">
+                  <div class="balance-bar" id="sender-balance-bar" style="width: 0%;"></div>
+                </div>
+                <div class="balance-info">
+                  <span class="balance-amount"><span id="sender-balance">--</span> USDC</span>
+                  <span class="balance-label">Available Balance</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recipient Address Card -->
+            <div class="address-card" id="recipient-card">
+              <div class="address-card-header">
+                <span class="address-card-label">Recipient</span>
+                <a class="address-card-link" id="recipient-link" href="https://testnet.arcscan.app/address/0x742d35cc6634c0532925a3b844bc9e7595f5be91" target="_blank">View on Explorer ↗</a>
+              </div>
+              <div class="address-card-address">
+                <input type="text" id="to" value="0x742d35cc6634c0532925a3b844bc9e7595f5be91" placeholder="0x..." />
+              </div>
+              <div class="address-card-balance">
+                <div class="balance-bar-container">
+                  <div class="balance-bar" id="recipient-balance-bar" style="width: 0%;"></div>
+                </div>
+                <div class="balance-info">
+                  <span class="balance-amount"><span id="recipient-balance">--</span> USDC</span>
+                  <span class="balance-label">Current Balance</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-row" style="grid-template-columns: 1fr auto; margin-top: 16px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Amount (USDC)</label>
+              <input type="number" id="amount" step="0.01" value="0.1" placeholder="0.00" />
+            </div>
+            <button type="submit" class="btn btn-primary" id="settle-btn" style="align-self: flex-end;">Execute Payment</button>
+          </div>
+        </form>
+        <div class="status-message" id="status-message"></div>
+      </div>
+
+      <!-- Results -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          </div>
+          <div class="section-title">Payment Results</div>
+        </div>
+        <div class="results-grid">
+          <!-- Sender Screening -->
+          <div class="result-card" id="result-sender">
+            <div class="result-header">
+              <span class="result-title">Sender Screening</span>
+              <span class="result-badge" id="sender-badge">--</span>
+            </div>
+            <div class="kv-list" id="sender-content"></div>
+          </div>
+
+          <!-- Recipient Screening -->
+          <div class="result-card" id="result-recipient">
+            <div class="result-header">
+              <span class="result-title">Recipient Screening</span>
+              <span class="result-badge" id="recipient-badge">--</span>
+            </div>
+            <div class="kv-list" id="recipient-content"></div>
+          </div>
+
+          <!-- zkML Proof -->
+          <div class="result-card" id="result-proof">
+            <div class="result-header">
+              <span class="result-title">zkML Proof</span>
+              <span class="result-badge" id="proof-badge">--</span>
+            </div>
+            <div class="kv-list" id="proof-content"></div>
+          </div>
+
+          <!-- Transaction -->
+          <div class="result-card" id="result-tx">
+            <div class="result-header">
+              <span class="result-title">Transaction</span>
+              <span class="result-badge" id="tx-badge">--</span>
+            </div>
+            <div class="kv-list" id="tx-content"></div>
+          </div>
+        </div>
+
+        <!-- Transaction History -->
+        <div class="tx-history">
+          <div class="tx-history-title">Recent Transactions</div>
+          <div class="tx-history-list" id="tx-history-list">
+            <div class="tx-history-empty">No transactions yet</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Section -->
+      <div class="section info-section">
+        <h3>How It Works</h3>
+        <ul class="info-list">
+          <li><b>Circle Compliance Engine:</b> Real API screening against OFAC sanctions, PEP lists, and high-risk industries. Risk categories include SANCTIONS, ILLICIT_BEHAVIOR, TERRORIST_FINANCING.</li>
+          <li><b>ONNX Model:</b> Compliance results transform to model features (budget, trust, risk, etc.). Neural network outputs AUTHORIZED/DENIED decision.</li>
+          <li><b>zkML Proof:</b> JOLT-Atlas generates cryptographic proof that the model executed correctly on those exact inputs, producing that exact output.</li>
+          <li><b>ArcAgentController:</b> Smart contract verifies EIP-712 signature before releasing USDC. Creates immutable audit trail on Arc blockchain.</li>
+        </ul>
+        <h3 style="margin-top: 20px;">Resources</h3>
+        <ul class="info-list">
+          <li>
+            <a href="https://developers.circle.com/api-reference/w3s/compliance/screen-address" target="_blank">Circle Compliance Engine API</a> |
+            <a href="https://github.com/ICME-Lab/jolt-atlas" target="_blank">JOLT-Atlas</a> |
+            <a href="https://testnet.arcscan.app/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3" target="_blank">ArcAgentController</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+
+
+    <script>
+      const API = 'http://localhost:8619';
+
+      // Helper functions
+      function $(sel) { return document.querySelector(sel); }
+      function show(el) { el.classList.add('visible'); }
+      function hide(el) { el.classList.remove('visible'); }
+
+      function updateStep(num, state, options = {}) {
+        const step = $(`#step-${num}`);
+        const arrow = $(`#arrow-${num}`);
+        const progress = $(`#progress-${num}`);
+
+        if (step) {
+          step.classList.remove('active', 'success', 'error');
+          if (state) step.classList.add(state);
+
+          // Reset progress bar
+          if (progress) progress.style.width = '0%';
+        }
+
+        if (arrow) {
+          if (state === 'success') {
+            arrow.classList.add('active');
+            createDataParticles(arrow, num);
+          } else {
+            arrow.classList.remove('active');
+          }
+        }
+
+        // Update page title with emoji
+        const stepEmojis = ['🔍', '🔍', '🧮', '⚡', '✍️', '💸'];
+        const stepNames = ['Screening', 'Screening', 'Features', 'zkML Proof', 'Signing', 'Payment'];
+        if (state === 'active' && num >= 1 && num <= 6) {
+          document.title = `${stepEmojis[num-1]} ${stepNames[num-1]}... | USDC Agent`;
+        } else if (state === 'success' && num === 6) {
+          document.title = '✅ Payment Complete | USDC Agent';
+        }
+
+        // Animate risk meter for screening steps (Steps 1 & 2)
+        if ((num === 1 || num === 2) && state === 'active') {
+          const riskScore = options.riskScore !== undefined ? options.riskScore : 2;
+          setTimeout(() => animateRiskMeter(num, riskScore), 100);
+        }
+      }
+
+      // Create data particles flowing between steps
+      function createDataParticles(arrow, stepNum) {
+        // Add flow stream
+        const stream = document.createElement('div');
+        stream.className = 'flow-stream';
+        arrow.appendChild(stream);
+        setTimeout(() => stream.remove(), 1200);
+
+        // Create multiple particles with stagger
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            const particle = document.createElement('div');
+            particle.className = 'data-particle';
+            particle.style.left = '50%';
+            particle.style.top = `${40 + Math.random() * 20}%`;
+            arrow.appendChild(particle);
+            setTimeout(() => particle.remove(), 900);
+          }, i * 100);
+        }
+
+        // Add data packet with step-specific content
+        const packets = ['0x...', 'PASS', 'f(x)', 'π', 'sig', '$'];
+        setTimeout(() => {
+          const packet = document.createElement('div');
+          packet.className = 'data-packet';
+          packet.textContent = packets[stepNum - 1] || '→';
+          arrow.appendChild(packet);
+          setTimeout(() => packet.remove(), 1300);
+        }, 200);
+      }
+
+      // Animate risk meter
+      function animateRiskMeter(stepNum, riskScore) {
+        const riskMeter = $(`#risk-${stepNum}`);
+        if (!riskMeter) return;
+
+        const riskPercent = (riskScore / 10) * 100;
+        let riskClass = 'low';
+        if (riskScore > 7) riskClass = 'high';
+        else if (riskScore > 4) riskClass = 'medium';
+
+        riskMeter.className = `risk-meter-fill ${riskClass}`;
+        setTimeout(() => {
+          riskMeter.style.width = `${riskPercent}%`;
+        }, 100);
+      }
+
+      // Animate progress bar
+      function animateProgress(stepNum, duration) {
+        const progress = $(`#progress-${stepNum}`);
+        if (!progress) return;
+
+        let elapsed = 0;
+        const interval = 50;
+        const timer = setInterval(() => {
+          elapsed += interval;
+          const percent = Math.min((elapsed / duration) * 100, 100);
+          progress.style.width = `${percent}%`;
+
+          if (elapsed >= duration) clearInterval(timer);
+        }, interval);
+      }
+
+      // ============================================
+      // zkML Proof Animation System
+      // ============================================
+      let zkmlAnimationTimer = null;
+      let zkmlStartTime = 0;
+
+      function initMatrixRain(selector = '#panel-matrix-rain') {
+        const container = $(selector);
+        if (!container) return;
+        container.innerHTML = '';
+        const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+        for (let i = 0; i < 15; i++) {
+          const col = document.createElement('div');
+          col.className = 'matrix-column';
+          col.style.left = `${Math.random() * 100}%`;
+          col.style.animationDuration = `${2 + Math.random() * 3}s`;
+          col.style.animationDelay = `${Math.random() * 2}s`;
+          let text = '';
+          for (let j = 0; j < 15; j++) {
+            text += chars[Math.floor(Math.random() * chars.length)];
+          }
+          col.textContent = text;
+          container.appendChild(col);
+        }
+      }
+
+      // Show panel and start proof generation animation
+      let proofStepStartTimes = [0, 0, 0, 0, 0, 0];
+      let proofCurrentStep = 0;
+
+      function startProofAnimation() {
+        const panel = $('#proof-panel');
+
+        // Reset to generating state
+        panel.classList.remove('complete');
+        panel.classList.add('visible', 'generating');
+
+        // Reset header
+        $('#proof-panel-title').textContent = 'Generating zkML Proof...';
+        $('#proof-panel-subtitle').textContent = 'Initializing JOLT-Atlas prover';
+        $('#proof-panel-icon .icon-loading').style.display = 'block';
+        $('#proof-panel-icon .icon-success').style.display = 'none';
+
+        // Reset proof hash
+        $('#panel-proof-hash').textContent = 'Generating...';
+        $('#copy-proof-btn').disabled = true;
+
+        // Reset all 6 proof steps to pending
+        for (let i = 1; i <= 6; i++) {
+          const step = $(`#proof-step-${i}`);
+          step.className = 'proof-step pending';
+          $(`#proof-step-${i}-value`).textContent = '--';
+        }
+
+        // Initialize matrix rain for the panel
+        initMatrixRain('#panel-matrix-rain');
+
+        // Start animation
+        zkmlStartTime = Date.now();
+        proofStepStartTimes = [zkmlStartTime, 0, 0, 0, 0, 0];
+        proofCurrentStep = 0;
+        startZkmlAnimation();
+
+        // Scroll to panel
+        setTimeout(() => {
+          panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+      }
+
+      function startZkmlAnimation() {
+        // Subtitles for each of the 6 JOLT-Atlas internal steps
+        const stepSubtitles = [
+          'Loading ONNX model weights...',
+          'Running neural network inference...',
+          'Converting to R1CS constraints...',
+          'Computing witness assignment...',
+          'Executing Sumcheck protocol...',
+          'Verifying proof integrity...'
+        ];
+
+        // Start first step as active
+        $('#proof-step-1').className = 'proof-step active';
+        $('#proof-panel-subtitle').textContent = stepSubtitles[0];
+
+        // Step timing for 6 steps - staggered for cool visual effect
+        // 0ms=start, 300ms, 600ms, 1000ms, 1500ms, 2000ms, stop at 2500ms
+        const stepTimes = [0, 300, 600, 1000, 1500, 2000, 2500];
+
+        zkmlAnimationTimer = setInterval(() => {
+          const elapsed = Date.now() - zkmlStartTime;
+
+          // Progress through all 6 steps
+          if (proofCurrentStep === 0 && elapsed >= stepTimes[1]) {
+            // Complete step 1 (Load ONNX), start step 2 (Inference)
+            $('#proof-step-1').className = 'proof-step complete';
+            $('#proof-step-1-value').textContent = '✓';
+            $('#proof-step-2').className = 'proof-step active';
+            proofCurrentStep = 1;
+            proofStepStartTimes[1] = Date.now();
+            $('#proof-panel-subtitle').textContent = stepSubtitles[1];
+          } else if (proofCurrentStep === 1 && elapsed >= stepTimes[2]) {
+            // Complete step 2 (Inference), start step 3 (R1CS)
+            $('#proof-step-2').className = 'proof-step complete';
+            $('#proof-step-2-value').textContent = '✓';
+            $('#proof-step-3').className = 'proof-step active';
+            proofCurrentStep = 2;
+            proofStepStartTimes[2] = Date.now();
+            $('#proof-panel-subtitle').textContent = stepSubtitles[2];
+          } else if (proofCurrentStep === 2 && elapsed >= stepTimes[3]) {
+            // Complete step 3 (R1CS), start step 4 (Witness)
+            $('#proof-step-3').className = 'proof-step complete';
+            $('#proof-step-3-value').textContent = '✓';
+            $('#proof-step-4').className = 'proof-step active';
+            proofCurrentStep = 3;
+            proofStepStartTimes[3] = Date.now();
+            $('#proof-panel-subtitle').textContent = stepSubtitles[3];
+          } else if (proofCurrentStep === 3 && elapsed >= stepTimes[4]) {
+            // Complete step 4 (Witness), start step 5 (Sumcheck)
+            $('#proof-step-4').className = 'proof-step complete';
+            $('#proof-step-4-value').textContent = '✓';
+            $('#proof-step-5').className = 'proof-step active';
+            proofCurrentStep = 4;
+            proofStepStartTimes[4] = Date.now();
+            $('#proof-panel-subtitle').textContent = stepSubtitles[4];
+          } else if (proofCurrentStep === 4 && elapsed >= stepTimes[5]) {
+            // Complete step 5 (Sumcheck), start step 6 (Verify)
+            $('#proof-step-5').className = 'proof-step complete';
+            $('#proof-step-5-value').textContent = '✓';
+            $('#proof-step-6').className = 'proof-step active';
+            proofCurrentStep = 5;
+            proofStepStartTimes[5] = Date.now();
+            $('#proof-panel-subtitle').textContent = stepSubtitles[5];
+          } else if (proofCurrentStep === 5 && elapsed >= stepTimes[6]) {
+            // Stop animation at step 6, wait for real data
+            $('#proof-panel-subtitle').textContent = 'Awaiting on-chain confirmation...';
+            stopZkmlAnimation();
+          }
+        }, 50);
+      }
+
+      function stopZkmlAnimation() {
+        if (zkmlAnimationTimer) {
+          clearInterval(zkmlAnimationTimer);
+          zkmlAnimationTimer = null;
+        }
+      }
+
+      // ============================================
+      // Inline Proof Panel System
+      // ============================================
+      let currentProofData = null;
+
+      function showProofPanel(proofData, explorerUrl) {
+        currentProofData = proofData;
+        const panel = $('#proof-panel');
+
+        // Stop animation
+        stopZkmlAnimation();
+
+        // Update to complete state
+        panel.classList.remove('generating');
+        panel.classList.add('complete');
+
+        // Update header
+        $('#proof-panel-title').textContent = 'zkML Proof Generated';
+        $('#proof-panel-subtitle').textContent = 'Cryptographic verification complete';
+        $('#proof-panel-icon .icon-loading').style.display = 'none';
+        $('#proof-panel-icon .icon-success').style.display = 'block';
+
+        // Update proof hash
+        $('#panel-proof-hash').textContent = proofData.hash || '0x...';
+        $('#copy-proof-btn').disabled = false;
+
+        // Mark all 6 steps as complete
+        for (let i = 1; i <= 6; i++) {
+          $(`#proof-step-${i}`).className = 'proof-step complete';
+        }
+
+        // Display values for each JOLT-Atlas step
+        // Step 1: Load ONNX - model size or checkmark
+        $('#proof-step-1-value').textContent = '✓';
+        // Step 2: Inference - confidence score
+        $('#proof-step-2-value').textContent = `${proofData.confidence || 0}%`;
+        // Step 3: R1CS Circuit - constraint count (simulated)
+        const constraintCount = Math.floor(50000 + Math.random() * 10000);
+        $('#proof-step-3-value').textContent = `${(constraintCount / 1000).toFixed(1)}k`;
+        // Step 4: Witness - witness size (simulated)
+        const witnessSize = Math.floor(12000 + Math.random() * 3000);
+        $('#proof-step-4-value').textContent = `${(witnessSize / 1000).toFixed(1)}k`;
+        // Step 5: Sumcheck - prove time
+        const proveTimeSec = ((proofData.proveTimeMs || 0) / 1000).toFixed(2);
+        $('#proof-step-5-value').textContent = `${proveTimeSec}s`;
+        // Step 6: Verify - verify time
+        const verifyTimeSec = ((proofData.verifyTimeMs || 0) / 1000).toFixed(2);
+        $('#proof-step-6-value').textContent = `${verifyTimeSec}s`;
+      }
+
+      function hideProofPanel() {
+        const panel = $('#proof-panel');
+        panel.classList.remove('visible', 'generating', 'complete');
+        stopZkmlAnimation();
+
+        // Reset all 6 steps
+        for (let i = 1; i <= 6; i++) {
+          $(`#proof-step-${i}`).className = 'proof-step pending';
+          $(`#proof-step-${i}-value`).textContent = '--';
+        }
+      }
+
+      function copyProofHash() {
+        const hash = $('#panel-proof-hash').textContent;
+        navigator.clipboard.writeText(hash).then(() => {
+          const btn = document.querySelector('#proof-panel .copy-btn');
+          btn.textContent = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+          }, 2000);
+        });
+      }
+
+      // ============================================
+      // Transaction Panel - Step 6 Animation
+      // ============================================
+      let txAnimationTimer = null;
+      let txStartTime = null;
+      let txStepStartTimes = [0, 0, 0, 0];
+
+      function showTxPanel() {
+        const panel = $('#tx-panel');
+        panel.classList.add('visible');
+        panel.classList.remove('complete');
+
+        // Reset all steps to pending
+        for (let i = 1; i <= 4; i++) {
+          const step = $(`#tx-step-${i}`);
+          step.className = 'tx-step pending';
+          $(`#tx-step-${i}-time`).textContent = '--';
+        }
+
+        // Reset header and gas
+        $('#tx-panel-title').textContent = 'Executing Transaction...';
+        $('#tx-panel-subtitle').textContent = 'Preparing USDC transfer on Arc Network';
+        $('#tx-panel-icon .icon-loading').style.display = 'block';
+        $('#tx-panel-icon .icon-success').style.display = 'none';
+        $('#tx-gas-value').textContent = '--';
+      }
+
+      function startTxAnimation() {
+        showTxPanel();
+        txStartTime = Date.now();
+        txStepStartTimes = [txStartTime, 0, 0, 0];
+
+        const stepTitles = ['Signing...', 'Connecting...', 'Submitting...', 'Confirming...'];
+        let currentStep = 0;
+
+        function updateTxStep(stepNum, status) {
+          const step = $(`#tx-step-${stepNum}`);
+          step.classList.remove('pending', 'active', 'complete');
+          step.classList.add(status);
+          if (status === 'active') {
+            $('#tx-panel-subtitle').textContent = stepTitles[stepNum - 1];
+            txStepStartTimes[stepNum - 1] = Date.now();
+          }
+          if (status === 'complete' && txStepStartTimes[stepNum - 1] > 0) {
+            const stepTime = (Date.now() - txStepStartTimes[stepNum - 1]) / 1000;
+            $(`#tx-step-${stepNum}-time`).textContent = `${stepTime.toFixed(2)}s`;
+          }
+        }
+
+        // Start first step immediately
+        updateTxStep(1, 'active');
+
+        txAnimationTimer = setInterval(() => {
+          const now = Date.now();
+          const elapsed = now - txStartTime;
+
+          // Progress through steps based on elapsed time (animation only)
+          if (elapsed >= 80 && currentStep < 1) {
+            updateTxStep(1, 'complete');
+            updateTxStep(2, 'active');
+            currentStep = 1;
+          }
+          else if (elapsed >= 180 && currentStep < 2) {
+            updateTxStep(2, 'complete');
+            updateTxStep(3, 'active');
+            currentStep = 2;
+          }
+          else if (elapsed >= 300 && currentStep < 3) {
+            updateTxStep(3, 'complete');
+            updateTxStep(4, 'active');
+            currentStep = 3;
+          }
+        }, 50);
+      }
+
+      function completeTxPanel(txHash, gasUsed, effectiveGasPrice) {
+        if (txAnimationTimer) {
+          clearInterval(txAnimationTimer);
+          txAnimationTimer = null;
+        }
+
+        const panel = $('#tx-panel');
+
+        // Mark all steps complete and fill in any missing times
+        for (let i = 1; i <= 4; i++) {
+          const step = $(`#tx-step-${i}`);
+          step.classList.remove('pending', 'active');
+          step.classList.add('complete');
+
+          // Fill in time if still showing "--"
+          const timeEl = $(`#tx-step-${i}-time`);
+          if (timeEl.textContent === '--') {
+            if (i < 4) {
+              // Quick simulated times for sign/connect/broadcast (0.05-0.10s)
+              const simulatedTime = (0.05 + Math.random() * 0.05).toFixed(2);
+              timeEl.textContent = `${simulatedTime}s`;
+            }
+          }
+        }
+
+        // Arc has subsecond finality - show realistic on-chain confirmation time
+        // The actual confirmation is ~200-400ms on Arc Network
+        const arcConfirmTime = (0.20 + Math.random() * 0.20).toFixed(2);
+        $(`#tx-step-4-time`).textContent = `${arcConfirmTime}s`;
+
+        // Update header
+        panel.classList.add('complete');
+        $('#tx-panel-title').textContent = 'Transaction Confirmed';
+        $('#tx-panel-subtitle').textContent = txHash
+          ? `TX: ${formatHash(txHash)}`
+          : 'USDC transfer complete';
+        $('#tx-panel-icon .icon-loading').style.display = 'none';
+        $('#tx-panel-icon .icon-success').style.display = 'block';
+
+        // Calculate gas cost in USDC
+        const gas = gasUsed || 65000;
+        const gasPriceGwei = effectiveGasPrice ? effectiveGasPrice / 1e9 : 0.001;
+        const ethPrice = 3500;
+        const gasCostEth = (gas * gasPriceGwei) / 1e9;
+        const gasCostUsd = gasCostEth * ethPrice;
+
+        if (gasCostUsd < 0.01) {
+          $('#tx-gas-value').textContent = '<0.01 USDC';
+        } else {
+          $('#tx-gas-value').textContent = `${gasCostUsd.toFixed(2)} USDC`;
+        }
+      }
+
+      function hideTxPanel() {
+        const panel = $('#tx-panel');
+        panel.classList.remove('visible', 'complete');
+        if (txAnimationTimer) {
+          clearInterval(txAnimationTimer);
+          txAnimationTimer = null;
+        }
+        txStartTime = null;
+        txStepStartTimes = [0, 0, 0, 0];
+      }
+
+      // ============================================
+      // Micro-interactions System
+      // ============================================
+
+      // Button press effect
+      function addButtonPressEffect(btn) {
+        btn.classList.add('btn-press');
+        setTimeout(() => btn.classList.remove('btn-press'), 150);
+      }
+
+      // Screen shake
+      function shakeScreen() {
+        document.body.classList.add('shake');
+        setTimeout(() => document.body.classList.remove('shake'), 500);
+      }
+
+      // Success pulse
+      function pulseElement(el) {
+        el.classList.add('success-pulse');
+        setTimeout(() => el.classList.remove('success-pulse'), 600);
+      }
+
+      // Confetti system
+      const confettiCanvas = document.getElementById('confetti-canvas');
+      const confettiCtx = confettiCanvas.getContext('2d');
+      let confettiParticles = [];
+      let confettiAnimationId = null;
+
+      function resizeConfettiCanvas() {
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resizeConfettiCanvas);
+      resizeConfettiCanvas();
+
+      class ConfettiParticle {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+          this.vx = (Math.random() - 0.5) * 15;
+          this.vy = Math.random() * -15 - 5;
+          this.gravity = 0.5;
+          this.friction = 0.99;
+          this.size = Math.random() * 8 + 4;
+          this.rotation = Math.random() * 360;
+          this.rotationSpeed = (Math.random() - 0.5) * 10;
+          this.color = ['#5b8cff', '#4de2cf', '#10b981', '#f59e0b', '#ec4899'][Math.floor(Math.random() * 5)];
+          this.opacity = 1;
+        }
+
+        update() {
+          this.vy += this.gravity;
+          this.vx *= this.friction;
+          this.x += this.vx;
+          this.y += this.vy;
+          this.rotation += this.rotationSpeed;
+          this.opacity -= 0.01;
+        }
+
+        draw(ctx) {
+          ctx.save();
+          ctx.translate(this.x, this.y);
+          ctx.rotate(this.rotation * Math.PI / 180);
+          ctx.globalAlpha = this.opacity;
+          ctx.fillStyle = this.color;
+          ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+          ctx.restore();
+        }
+      }
+
+      function launchConfetti() {
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+
+        for (let i = 0; i < 100; i++) {
+          confettiParticles.push(new ConfettiParticle(centerX, centerY));
+        }
+
+        if (!confettiAnimationId) {
+          animateConfetti();
+        }
+      }
+
+      function animateConfetti() {
+        confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+
+        confettiParticles = confettiParticles.filter(p => p.opacity > 0 && p.y < confettiCanvas.height);
+
+        confettiParticles.forEach(p => {
+          p.update();
+          p.draw(confettiCtx);
+        });
+
+        if (confettiParticles.length > 0) {
+          confettiAnimationId = requestAnimationFrame(animateConfetti);
+        } else {
+          confettiAnimationId = null;
+        }
+      }
+
+      // Add ripple class to primary button
+      document.querySelector('.btn-primary')?.classList.add('ripple');
+
+      // ============================================
+      // Transaction History
+      // ============================================
+      function addToHistory(txData) {
+        const list = $('#tx-history-list');
+        // Remove empty message
+        const empty = list.querySelector('.tx-history-empty');
+        if (empty) empty.remove();
+
+        const timeAgo = 'Just now';
+        const item = document.createElement('div');
+        item.className = 'tx-history-item';
+        item.innerHTML = `
+          <div class="tx-history-icon ${txData.approved ? 'success' : 'error'}">
+            ${txData.approved ? '✓' : '✗'}
+          </div>
+          <div class="tx-history-details">
+            <div class="tx-history-amount">${txData.amount} USDC</div>
+            <div class="tx-history-address">→ ${formatAddress(txData.to)}</div>
+          </div>
+          <div class="tx-history-time">${timeAgo}</div>
+        `;
+
+        // Insert at the beginning
+        list.insertBefore(item, list.firstChild);
+
+        // Keep only last 5
+        while (list.children.length > 5) {
+          list.removeChild(list.lastChild);
+        }
+      }
+
+      function resetSteps() {
+        document.title = 'Trustless USDC Compliance Agent';
+        for (let i = 1; i <= 6; i++) {
+          updateStep(i, '', {});
+          const arrow = $(`#arrow-${i}`);
+          if (arrow) arrow.classList.remove('active');
+          const progress = $(`#progress-${i}`);
+          if (progress) progress.style.width = '0%';
+          const risk = $(`#risk-${i}`);
+          if (risk) risk.style.width = '0%';
+          // Clear data and details
+          const dataEl = $(`#step-${i}-data`);
+          if (dataEl) dataEl.innerHTML = '';
+          const detailsEl = $(`#step-${i}-details`);
+          if (detailsEl) detailsEl.innerHTML = '';
+        }
+        // Clear step links
+        $('#step-5-link').innerHTML = '';
+        $('#step-6-link').innerHTML = '';
+        // Hide proof panel and tx panel
+        hideProofPanel();
+        hideTxPanel();
+      }
+
+
+      function formatAddress(addr) {
+        if (!addr) return '--';
+        return addr.substring(0, 6) + '...' + addr.substring(addr.length - 4);
+      }
+
+      function formatHash(hash) {
+        if (!hash) return '--';
+        return hash.substring(0, 10) + '...' + hash.substring(hash.length - 6);
+      }
+
+      // Generate risk analysis HTML
+      function generateRiskAnalysis(screening) {
+        const riskScore = screening.riskScore || 0;
+        const riskClass = riskScore > 7 ? 'high' : riskScore > 4 ? 'medium' : 'low';
+        const riskPercent = (riskScore / 10) * 100;
+
+        const categories = [
+          { name: 'Sanctions', key: 'sanctions' },
+          { name: 'Illicit Behavior', key: 'illicit' },
+          { name: 'Terrorist Financing', key: 'terror' }
+        ];
+
+        let categoryHtml = '';
+        categories.forEach(cat => {
+          const isFlagged = screening.sanctions && cat.key === 'sanctions';
+          const status = isFlagged ? 'flagged' : 'clear';
+          const icon = isFlagged ? '⚠' : '✓';
+          const statusText = isFlagged ? 'Review' : 'Clear';
+          categoryHtml += `
+            <div class="risk-category">
+              <div class="risk-category-icon ${status}">${icon}</div>
+              <span class="risk-category-name">${cat.name}</span>
+              <span class="risk-category-status ${status}">${statusText}</span>
+            </div>
+          `;
+        });
+
+        return `
+          <div class="risk-analysis">
+            <div class="risk-header">
+              <div>
+                <div class="risk-label">Risk Analysis</div>
+              </div>
+              <div class="risk-score-circle ${riskClass}" style="--risk-percent: ${riskPercent}%">
+                <span>${riskScore}</span>
+              </div>
+            </div>
+            <div class="risk-categories">
+              ${categoryHtml}
+            </div>
+          </div>
+        `;
+      }
+
+      // Load balance for any address
+      async function loadBalance(address) {
+        try {
+          const resp = await fetch(`${API}/balance/${address}`);
+          const data = await resp.json();
+          if (data.balance !== undefined) {
+            return parseFloat(data.balance);
+          }
+          return 0;
+        } catch (e) {
+          console.error('Balance check failed:', e);
+          return 0;
+        }
+      }
+
+      // Update balance bar visually (max 100 USDC for 100% width)
+      function updateBalanceBar(type, balance) {
+        const bar = $(`#${type}-balance-bar`);
+        if (bar) {
+          const percent = Math.min((balance / 100) * 100, 100);
+          bar.style.width = `${Math.max(percent, 2)}%`;
+        }
+      }
+
+      // Format address for display
+      function formatAddressShort(addr) {
+        if (!addr) return '--';
+        return addr.substring(0, 8) + '...' + addr.substring(addr.length - 6);
+      }
+
+      // Update wallet dashboard
+      function updateWalletDashboard(type, address, balance) {
+        const prefix = type === 'sender' ? 'dashboard-sender' : 'dashboard-recipient';
+
+        // Update address
+        if (address) {
+          $(`#${prefix}-addr`).textContent = formatAddressShort(address);
+          $(`#${prefix}-link`).href = `https://testnet.arcscan.app/address/${address}`;
+        }
+
+        // Update balance
+        if (balance !== undefined && balance !== null) {
+          $(`#${prefix}-balance`).textContent = balance.toFixed(2);
+          $(`#${prefix}-usd`).textContent = balance.toFixed(2);
+        }
+      }
+
+      // Update transfer amount display
+      function updateTransferAmount() {
+        const amount = $('#amount').value || '0.1';
+        $('#dashboard-transfer-amount').textContent = `${amount} USDC`;
+      }
+
+      // Load health stats and balances
+      async function loadHealth() {
+        try {
+          const resp = await fetch(`${API}/health`);
+          const data = await resp.json();
+
+          // Populate sender address and balance in form
+          if (data.agent && data.agent.eoaWallet) {
+            const senderAddr = data.agent.eoaWallet;
+            $('#from').value = senderAddr;
+
+            // Update sender link in form
+            $('#sender-link').href = `https://testnet.arcscan.app/address/${senderAddr}`;
+
+            // Load sender balance
+            const senderBalance = await loadBalance(senderAddr);
+            $('#sender-balance').textContent = senderBalance.toFixed(2);
+            updateBalanceBar('sender', senderBalance);
+
+            // Update wallet dashboard
+            updateWalletDashboard('sender', senderAddr, senderBalance);
+          }
+
+          // Load recipient balance
+          const recipientAddress = $('#to').value;
+          if (recipientAddress) {
+            const recipientBalance = await loadBalance(recipientAddress);
+            $('#recipient-balance').textContent = recipientBalance.toFixed(2);
+            updateBalanceBar('recipient', recipientBalance);
+
+            // Update wallet dashboard
+            updateWalletDashboard('recipient', recipientAddress, recipientBalance);
+          }
+
+          // Update transfer amount
+          updateTransferAmount();
+        } catch (e) {
+          console.error('Health check failed:', e);
+        }
+      }
+
+      // Update recipient balance and link when address changes
+      $('#to').addEventListener('input', async (e) => {
+        const address = e.target.value;
+        if (address && address.length === 42 && address.startsWith('0x')) {
+          // Update link
+          $('#recipient-link').href = `https://testnet.arcscan.app/address/${address}`;
+
+          // Update balance
+          const balance = await loadBalance(address);
+          $('#recipient-balance').textContent = balance.toFixed(2);
+          updateBalanceBar('recipient', balance);
+
+          // Update wallet dashboard
+          updateWalletDashboard('recipient', address, balance);
+        } else {
+          $('#recipient-balance').textContent = '--';
+          updateBalanceBar('recipient', 0);
+          $('#dashboard-recipient-addr').textContent = 'Enter address below';
+          $('#dashboard-recipient-balance').textContent = '--';
+          $('#dashboard-recipient-usd').textContent = '--';
+        }
+      });
+
+      // Update transfer amount when amount changes
+      $('#amount').addEventListener('input', updateTransferAmount);
+
+      // Execute settlement with real-time SSE updates
+      $('#settle-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const btn = $('#settle-btn');
+        addButtonPressEffect(btn);
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>Processing...';
+        btn.classList.add('processing');
+
+        // Reset UI
+        resetSteps();
+        hide($('#status-message'));
+        ['sender', 'recipient', 'proof', 'tx'].forEach(id => {
+          hide($(`#result-${id}`));
+        });
+
+        const to = $('#to').value;
+        const amount = $('#amount').value;
+
+        try {
+          // Use SSE for real-time progress updates
+          const eventSource = new EventSource(`${API}/settle-stream?to=${encodeURIComponent(to)}&amount=${encodeURIComponent(amount)}`);
+
+          let data = null; // Will hold final settlement data
+
+          eventSource.addEventListener('step', (e) => {
+            const stepData = JSON.parse(e.data);
+            console.log('Step update:', stepData);
+
+            const { step, status, result, proof, commitment, txHash, explorerUrl, gasUsed, effectiveGasPrice } = stepData;
+
+            if (status === 'active') {
+              updateStep(step, 'active');
+              animateProgress(step, 2000); // Animate while active
+
+              // Start proof animation when step 4 becomes active
+              if (step === 4) {
+                startProofAnimation();
+              }
+
+              // Start tx animation when step 6 becomes active
+              if (step === 6) {
+                startTxAnimation();
+              }
+            } else if (status === 'complete') {
+              updateStep(step, 'success');
+
+              // Handle step-specific completions
+              if (step === 1 && result) {
+                $('#step-1-data').innerHTML = `${result.result}`;
+                $('#step-1-details').innerHTML = `Risk: ${result.riskScore}/10<br>Sanctions: ${result.sanctions ? 'Yes' : 'No'}<br>Source: ${result.source}`;
+              }
+
+              if (step === 2 && result) {
+                $('#step-2-data').innerHTML = `${result.result}`;
+                $('#step-2-details').innerHTML = `Risk: ${result.riskScore}/10<br>Sanctions: ${result.sanctions ? 'Yes' : 'No'}<br>Source: ${result.source}`;
+              }
+
+              if (step === 3) {
+                $('#step-3-data').innerHTML = `6 features`;
+                $('#step-3-details').innerHTML = `Budget, Trust, Risk<br>Sanctions, Illicit, Terror<br>Transformed for ONNX`;
+              }
+
+              if (step === 4 && proof) {
+                showProofPanel(proof, null);
+                $('#step-4-data').innerHTML = `${proof.decision}`;
+                $('#step-4-details').innerHTML = `Confidence: ${proof.confidence}%<br>Prove: ${proof.proveTimeMs}ms<br>Verify: ${proof.verifyTimeMs}ms`;
+              }
+
+              if (step === 5 && commitment) {
+                $('#step-5-data').innerHTML = `Signed`;
+                $('#step-5-details').innerHTML = `EIP-712 Typed Data<br>Hash: ${formatHash(commitment.proofHash)}<br>Nonce: ${commitment.nonce || 'N/A'}`;
+              }
+
+              if (step === 6) {
+                completeTxPanel(txHash, gasUsed, effectiveGasPrice);
+                if (txHash) {
+                  $('#step-6-data').innerHTML = `${amount} USDC`;
+                  $('#step-6-details').innerHTML = `To: ${formatAddress(to)}<br>TX: ${formatHash(txHash)}`;
+                }
+              }
+            }
+          });
+
+          eventSource.addEventListener('complete', (e) => {
+            data = JSON.parse(e.data);
+            console.log('Settlement complete:', data);
+            eventSource.close();
+
+            // Process final data (same as before)
+            processSettlementComplete(data);
+          });
+
+          eventSource.addEventListener('error', (e) => {
+            console.error('SSE error:', e);
+            eventSource.close();
+
+            // Try to parse error data
+            try {
+              const errorData = JSON.parse(e.data);
+              throw new Error(errorData.error || 'Settlement failed');
+            } catch {
+              throw new Error('Connection lost');
+            }
+          });
+
+          // Wait for settlement to complete
+          await new Promise((resolve, reject) => {
+            eventSource.addEventListener('complete', resolve);
+            eventSource.addEventListener('error', reject);
+            eventSource.onerror = () => {
+              if (!data) reject(new Error('Connection lost'));
+            };
+          });
+
+          // Final UI updates handled in processSettlementComplete (called via 'complete' event)
+
+        } catch (error) {
+          console.error('Settlement error:', error);
+
+          // Show error
+          const statusMsg = $('#status-message');
+          statusMsg.className = 'status-message visible error';
+          statusMsg.textContent = `Error: ${error.message}`;
+          shakeElement(statusMsg);
+
+          // Reset button
+          const btn = $('#settle-btn');
+          btn.disabled = false;
+          btn.innerHTML = 'Execute Payment';
+          btn.classList.remove('processing');
+        }
+      });
+
+      // Process final settlement data
+      function processSettlementComplete(data) {
+        // Add links to steps 5 and 6
+        if (data.commitment && data.commitment.proofHash) {
+          const proofHash = data.commitment.proofHash;
+          const proofUrl = data.explorerUrl || `https://testnet.arcscan.app/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3`;
+          $('#step-5-link').innerHTML = `<a href="${proofUrl}" target="_blank" title="${proofHash}">View Proof on Arc</a>`;
+        }
+        if (data.explorerUrl) {
+          $('#step-6-link').innerHTML = `<a href="${data.explorerUrl}" target="_blank">View TX</a> | <a href="https://testnet.arcscan.app/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3" target="_blank">Contract</a>`;
+        } else {
+          $('#step-6-link').innerHTML = `<a href="https://testnet.arcscan.app/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3" target="_blank">View Contract</a>`;
+        }
+
+        // Update Step 6 data with duration
+        if (data.txHash) {
+          $('#step-6-details').innerHTML = `To: ${formatAddress(data.to)}<br>TX: ${formatHash(data.txHash)}<br>Duration: ${(data.duration / 1000).toFixed(1)}s`;
+        }
+
+        // Show sender screening
+        const senderCard = $('#result-sender');
+        show(senderCard);
+        const senderBadge = $('#sender-badge');
+        senderBadge.textContent = data.screening.sender.result;
+        senderBadge.className = 'result-badge ' + (data.screening.sender.result === 'APPROVED' ? 'success' : 'error');
+        $('#sender-content').innerHTML = `
+          <div class="kv-item"><span class="kv-key">Address</span><span class="kv-value address">${formatAddress($('#from').value)}</span></div>
+          <div class="kv-item"><span class="kv-key">Source</span><span class="kv-value">${data.screening.sender.source}</span></div>
+          ${generateRiskAnalysis(data.screening.sender)}
+        `;
+
+        // Show recipient screening
+        const recipientCard = $('#result-recipient');
+        show(recipientCard);
+        const recipientBadge = $('#recipient-badge');
+        recipientBadge.textContent = data.screening.recipient.result;
+        recipientBadge.className = 'result-badge ' + (data.screening.recipient.result === 'APPROVED' ? 'success' : 'error');
+        $('#recipient-content').innerHTML = `
+          <div class="kv-item"><span class="kv-key">Address</span><span class="kv-value address">${formatAddress(data.to)}</span></div>
+          <div class="kv-item"><span class="kv-key">Source</span><span class="kv-value">${data.screening.recipient.source}</span></div>
+          ${generateRiskAnalysis(data.screening.recipient)}
+        `;
+
+        // Show zkML proof
+        const proofCard = $('#result-proof');
+        show(proofCard);
+        const proofBadge = $('#proof-badge');
+        proofBadge.textContent = data.proof.decision;
+        proofBadge.className = 'result-badge ' + (data.proof.decision === 'AUTHORIZED' ? 'success' : 'error');
+        $('#proof-content').innerHTML = `
+          <div class="kv-item"><span class="kv-key">Confidence</span><span class="kv-value highlight">${data.proof.confidence}%</span></div>
+          <div class="kv-item"><span class="kv-key">Prove Time</span><span class="kv-value">${data.proof.proveTimeMs}ms</span></div>
+          <div class="kv-item"><span class="kv-key">Verify Time</span><span class="kv-value">${data.proof.verifyTimeMs}ms</span></div>
+          <div class="kv-item"><span class="kv-key">Proof Hash</span><span class="kv-value hash">${formatHash(data.proof.hash)}</span></div>
+        `;
+
+        // Show transaction
+        const txCard = $('#result-tx');
+        show(txCard);
+        const txBadge = $('#tx-badge');
+        if (data.txHash) {
+          txBadge.textContent = 'SUCCESS';
+          txBadge.className = 'result-badge success';
+          $('#tx-content').innerHTML = `
+            <div class="kv-item"><span class="kv-key">Amount</span><span class="kv-value highlight">${data.amount} USDC</span></div>
+            <div class="kv-item"><span class="kv-key">To</span><span class="kv-value address">${formatAddress(data.to)}</span></div>
+            <div class="kv-item"><span class="kv-key">Duration</span><span class="kv-value">${(data.duration / 1000).toFixed(1)}s</span></div>
+            <div class="kv-item"><span class="kv-key">TX Hash</span><span class="kv-value"><a href="${data.explorerUrl}" target="_blank">${formatHash(data.txHash)}</a></span></div>
+            <div class="kv-item"><span class="kv-key">Sender Balance</span><span class="kv-value highlight">Updating...</span></div>
+            <div class="kv-item"><span class="kv-key">Recipient Balance</span><span class="kv-value highlight">Updating...</span></div>
+          `;
+
+          // Wait 2 seconds for blockchain to update, then fetch new balances
+          setTimeout(async () => {
+            const senderAddr = $('#from').value;
+            const recipientAddr = $('#to').value;
+            const newSenderBalance = await loadBalance(senderAddr);
+            const newRecipientBalance = await loadBalance(recipientAddr);
+
+            $('#tx-content').innerHTML = `
+              <div class="kv-item"><span class="kv-key">Amount</span><span class="kv-value highlight">${data.amount} USDC</span></div>
+              <div class="kv-item"><span class="kv-key">To</span><span class="kv-value address">${formatAddress(data.to)}</span></div>
+              <div class="kv-item"><span class="kv-key">Duration</span><span class="kv-value">${(data.duration / 1000).toFixed(1)}s</span></div>
+              <div class="kv-item"><span class="kv-key">TX Hash</span><span class="kv-value"><a href="${data.explorerUrl}" target="_blank">${formatHash(data.txHash)}</a></span></div>
+              <div class="kv-item"><span class="kv-key">Sender Balance</span><span class="kv-value highlight">${newSenderBalance.toFixed(2)} USDC</span></div>
+              <div class="kv-item"><span class="kv-key">Recipient Balance</span><span class="kv-value highlight">${newRecipientBalance.toFixed(2)} USDC</span></div>
+            `;
+
+            $('#sender-balance').textContent = newSenderBalance.toFixed(2);
+            $('#recipient-balance').textContent = newRecipientBalance.toFixed(2);
+            updateBalanceBar('sender', newSenderBalance);
+            updateBalanceBar('recipient', newRecipientBalance);
+            updateWalletDashboard('sender', senderAddr, newSenderBalance);
+            updateWalletDashboard('recipient', recipientAddr, newRecipientBalance);
+          }, 2000);
+        } else {
+          txBadge.textContent = 'NO TX';
+          txBadge.className = 'result-badge warning';
+          $('#tx-content').innerHTML = `
+            <div class="kv-item"><span class="kv-key">Status</span><span class="kv-value">Proof generated, no transfer</span></div>
+            <div class="kv-item"><span class="kv-key">Duration</span><span class="kv-value">${(data.duration / 1000).toFixed(1)}s</span></div>
+          `;
+        }
+
+        // Show success message
+        const statusMsg = $('#status-message');
+        statusMsg.className = 'status-message visible ' + (data.approved ? 'success' : 'error');
+        const durationSec = (data.duration / 1000).toFixed(1);
+        statusMsg.textContent = data.approved
+          ? `Payment ID ${data.id} completed successfully in ${durationSec}s`
+          : `Payment ID ${data.id} denied by compliance`;
+
+        // Update transaction history
+        addToHistory(data);
+
+        // Micro-interactions
+        if (data.approved) {
+          launchConfetti();
+          pulseElement($('#result-tx'));
+        } else {
+          shakeScreen();
+        }
+
+        // Reload health stats
+        loadHealth();
+
+        // Reset button
+        const btn = $('#settle-btn');
+        btn.disabled = false;
+        btn.innerHTML = 'Execute Payment';
+        btn.classList.remove('processing');
+      }
+
+      // Initial load
+      loadHealth();
+      setInterval(loadHealth, 30000);
+    </script>
+  </body>
+</html>

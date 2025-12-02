@@ -323,6 +323,19 @@ app.get('/health', async (req, res) => {
   });
 });
 
+// GET /balance/:address - Get USDC balance for any address
+app.get('/balance/:address', async (req, res) => {
+  const { address } = req.params;
+
+  try {
+    const balance = await getUsdcBalance(address);
+    res.json({ address, balance: parseFloat(balance) });
+  } catch (e) {
+    console.error(`Balance check failed for ${address}:`, e.message);
+    res.json({ address, balance: 0 });
+  }
+});
+
 // POST /screen - Screen an address
 app.post('/screen', async (req, res) => {
   const { address } = req.body;
@@ -349,7 +362,7 @@ app.post('/screen', async (req, res) => {
   });
 });
 
-// POST /settle - Execute compliant settlement
+// POST /settle - Execute compliant settlement (legacy non-streaming)
 app.post('/settle', async (req, res) => {
   const { to, amount, reference, memo } = req.body;
 
@@ -362,19 +375,76 @@ app.post('/settle', async (req, res) => {
     return res.status(400).json({ error: 'invalid amount' });
   }
 
+  // Redirect to streaming endpoint internally
+  req.query.stream = 'false';
+  return handleSettle(req, res, null);
+});
+
+// GET /settle-stream - SSE endpoint for real-time settlement progress
+app.get('/settle-stream', async (req, res) => {
+  const { to, amount, reference, memo } = req.query;
+
+  if (!to || !amount) {
+    return res.status(400).json({ error: 'to and amount required' });
+  }
+
+  // Set up SSE headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  // Helper to send SSE events
+  const sendEvent = (event, data) => {
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  req.body = { to, amount, reference, memo };
+  return handleSettle(req, res, sendEvent);
+});
+
+// Shared settlement logic
+async function handleSettle(req, res, sendEvent) {
+  const { to, amount, reference, memo } = req.body;
+  const isStreaming = !!sendEvent;
+
+  const amountNum = parseFloat(amount);
+  if (isNaN(amountNum) || amountNum <= 0) {
+    if (isStreaming) {
+      sendEvent('error', { error: 'invalid amount' });
+      res.end();
+    } else {
+      res.status(400).json({ error: 'invalid amount' });
+    }
+    return;
+  }
+
   console.log(`\n[SETTLE] Processing: ${amount} USDC to ${to}`);
   console.log(`[SETTLE] Reference: ${reference || 'none'}`);
 
   const settlementId = `SET-${Date.now()}`;
   const startTime = Date.now();
 
+  // Helper to emit step progress
+  const emitStep = (step, status, data = {}) => {
+    if (isStreaming) {
+      sendEvent('step', { step, status, ...data, elapsed: Date.now() - startTime });
+    }
+  };
+
   try {
-    // Step 1: Dual-sided compliance screening
+    // Step 1: Screen sender
+    emitStep(1, 'active');
     console.log('[STEP 1] Screening sender (agent wallet)...');
     const senderScreening = await screenAddress(wallet.address);
+    emitStep(1, 'complete', { result: senderScreening });
 
+    // Step 2: Screen recipient
+    emitStep(2, 'active');
     console.log('[STEP 2] Screening recipient...');
     const recipientScreening = await screenAddress(to);
+    emitStep(2, 'complete', { result: recipientScreening });
 
     // Combine screening results
     const screening = {
@@ -388,14 +458,13 @@ app.post('/settle', async (req, res) => {
     console.log(`[SCREEN] Sender: ${senderScreening.result} (risk: ${senderScreening.riskScore})`);
     console.log(`[SCREEN] Recipient: ${recipientScreening.result} (risk: ${recipientScreening.riskScore})`);
 
-    // Step 3: Determine if Travel Rule applies ($3000+)
+    // Step 3: Build compliance features
+    emitStep(3, 'active');
     const travelRuleRequired = amountNum >= 3000;
     if (travelRuleRequired) {
       console.log('[STEP 3] Travel Rule applies (amount >= $3000)');
     }
 
-    // Step 4: Build compliance features for zkML
-    // Use features that align with the model's training data
     const complianceFeatures = {
       budget: screening.result === 'APPROVED' ? 15 : 5,
       trust: screening.result === 'APPROVED' ? 7 : 0,
@@ -406,8 +475,10 @@ app.post('/settle', async (req, res) => {
       time: 1,
       risk: screening.riskScore > 7 ? 1 : 0
     };
+    emitStep(3, 'complete', { features: Object.keys(complianceFeatures).length });
 
     // Step 4: Generate zkML proof
+    emitStep(4, 'active');
     console.log('[STEP 4] Generating zkML compliance proof...');
     let proof;
     if (zkml.isAvailable()) {
@@ -419,10 +490,20 @@ app.post('/settle', async (req, res) => {
       );
       proof.mock = true;
     }
+    emitStep(4, 'complete', {
+      proof: {
+        hash: proof.proof_hash,
+        decision: proof.decision,
+        confidence: proof.confidence,
+        proveTimeMs: proof.prove_time_ms,
+        verifyTimeMs: proof.verify_time_ms
+      }
+    });
 
     const approved = proof.decision === 'AUTHORIZED' && screening.result === 'APPROVED';
 
     // Step 5: Sign commitment
+    emitStep(5, 'active');
     console.log('[STEP 5] Signing commitment...');
     const commitment = {
       proofHash: '0x' + proof.proof_hash.padStart(64, '0'),
@@ -430,26 +511,27 @@ app.post('/settle', async (req, res) => {
       timestamp: Math.floor(Date.now() / 1000),
       nonce: Date.now()
     };
-    // Use controller-specific signature if in controller mode
     const signature = USE_CONTROLLER
       ? await signControllerCommitment(commitment)
       : await signCommitment(wallet, commitment);
+    emitStep(5, 'complete', { commitment });
 
     // Step 6: Execute transfer if approved
+    emitStep(6, 'active');
     let txHash = null;
     let explorerUrl = null;
+    let gasUsed = null;
+    let effectiveGasPrice = null;
 
     if (approved) {
       console.log('[STEP 6] Executing settlement on Arc...');
 
-      // Use ArcAgentController if configured (trustless mode)
       if (USE_CONTROLLER && controller) {
         try {
           const { ethers } = require('ethers');
-          const amountWei = ethers.parseUnits(amount, 6); // USDC has 6 decimals
-          const normalizedTo = ethers.getAddress(to); // Ensure proper checksum
+          const amountWei = ethers.parseUnits(amount.toString(), 6);
+          const normalizedTo = ethers.getAddress(to);
 
-          // Execute transfer through controller with proof verification
           const tx = await controller.executeTransfer(
             normalizedTo,
             amountWei,
@@ -464,36 +546,36 @@ app.post('/settle', async (req, res) => {
 
           const receipt = await tx.wait();
           txHash = receipt.hash;
+          gasUsed = receipt.gasUsed ? Number(receipt.gasUsed) : null;
+          effectiveGasPrice = receipt.effectiveGasPrice ? Number(receipt.effectiveGasPrice) : null;
           explorerUrl = getTxExplorerUrl(txHash);
-          console.log(`[SUCCESS] Controller TX: ${txHash}`);
+          console.log(`[SUCCESS] Controller TX: ${txHash} (gas: ${gasUsed}, price: ${effectiveGasPrice})`);
         } catch (txError) {
           console.error('[ERROR] Controller transfer failed:', txError.message);
         }
-      }
-      // Try Circle Wallet if no controller
-      else if (circleWalletId) {
+      } else if (circleWalletId) {
         const circleResult = await circleWalletTransfer(to, amount);
         if (circleResult) {
           txHash = circleResult.txHash;
           explorerUrl = getTxExplorerUrl(txHash);
           console.log(`[SUCCESS] Circle Wallet TX: ${txHash}`);
         }
-      }
-      // Fall back to EOA transfer
-      else {
+      } else {
         try {
           const receipt = await transferUsdc(wallet, to, amount);
           txHash = receipt.hash;
+          gasUsed = receipt.gasUsed ? Number(receipt.gasUsed) : null;
+          effectiveGasPrice = receipt.effectiveGasPrice ? Number(receipt.effectiveGasPrice) : null;
           explorerUrl = getTxExplorerUrl(txHash);
-          console.log(`[SUCCESS] EOA TX: ${txHash}`);
+          console.log(`[SUCCESS] EOA TX: ${txHash} (gas: ${gasUsed}, price: ${effectiveGasPrice})`);
         } catch (txError) {
           console.error('[ERROR] Transfer failed:', txError.message);
-          // Continue without transfer for demo (may not have balance)
         }
       }
     } else {
       console.log('[DENIED] Settlement blocked by compliance');
     }
+    emitStep(6, 'complete', { txHash, explorerUrl, gasUsed, effectiveGasPrice });
 
     const duration = Date.now() - startTime;
 
@@ -529,6 +611,8 @@ app.post('/settle', async (req, res) => {
       signature,
       txHash,
       explorerUrl,
+      gasUsed,
+      effectiveGasPrice,
       travelRuleRequired,
       duration,
       timestamp: Date.now()
@@ -538,16 +622,23 @@ app.post('/settle', async (req, res) => {
 
     console.log(`[COMPLETE] Settlement ${settlementId} in ${duration}ms\n`);
 
-    res.json(settlement);
+    if (isStreaming) {
+      sendEvent('complete', settlement);
+      res.end();
+    } else {
+      res.json(settlement);
+    }
 
   } catch (error) {
     console.error('[ERROR] Settlement failed:', error);
-    res.status(500).json({
-      error: error.message,
-      settlementId
-    });
+    if (isStreaming) {
+      sendEvent('error', { error: error.message, settlementId });
+      res.end();
+    } else {
+      res.status(500).json({ error: error.message, settlementId });
+    }
   }
-});
+}
 
 // GET /settlements - List settlement history
 app.get('/settlements', (req, res) => {
