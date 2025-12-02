@@ -2444,70 +2444,22 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Payment Form -->
-      <div class="section">
-        <div class="section-header">
-          <div class="section-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
-          </div>
-          <div class="section-title">Execute Payment</div>
+        <!-- Start Demo Button -->
+        <div class="start-demo-container" style="display: flex; justify-content: center; margin-top: 32px;">
+          <button type="button" class="btn btn-primary btn-large" id="settle-btn" style="padding: 16px 48px; font-size: 18px; font-weight: 600;">
+            Start Demo
+          </button>
         </div>
-        <form id="settle-form">
-          <div class="form-row" style="grid-template-columns: 1fr 1fr;">
-            <!-- Sender Address Card -->
-            <div class="address-card" id="sender-card">
-              <div class="address-card-header">
-                <span class="address-card-label">Sender (Agent Wallet)</span>
-                <a class="address-card-link" id="sender-link" href="#" target="_blank">View on Explorer ↗</a>
-              </div>
-              <div class="address-card-address">
-                <input type="text" id="from" readonly value="" placeholder="Loading..." />
-              </div>
-              <div class="address-card-balance">
-                <div class="balance-bar-container">
-                  <div class="balance-bar" id="sender-balance-bar" style="width: 0%;"></div>
-                </div>
-                <div class="balance-info">
-                  <span class="balance-amount"><span id="sender-balance">--</span> USDC</span>
-                  <span class="balance-label">Available Balance</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Recipient Address Card -->
-            <div class="address-card" id="recipient-card">
-              <div class="address-card-header">
-                <span class="address-card-label">Recipient</span>
-                <a class="address-card-link" id="recipient-link" href="https://testnet.arcscan.app/address/0x742d35cc6634c0532925a3b844bc9e7595f5be91" target="_blank">View on Explorer ↗</a>
-              </div>
-              <div class="address-card-address">
-                <input type="text" id="to" value="0x742d35cc6634c0532925a3b844bc9e7595f5be91" placeholder="0x..." />
-              </div>
-              <div class="address-card-balance">
-                <div class="balance-bar-container">
-                  <div class="balance-bar" id="recipient-balance-bar" style="width: 0%;"></div>
-                </div>
-                <div class="balance-info">
-                  <span class="balance-amount"><span id="recipient-balance">--</span> USDC</span>
-                  <span class="balance-label">Current Balance</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="form-row" style="grid-template-columns: 1fr auto; margin-top: 16px;">
-            <div class="form-group" style="margin-bottom: 0;">
-              <label>Amount (USDC)</label>
-              <input type="number" id="amount" step="0.01" value="0.1" placeholder="0.00" />
-            </div>
-            <button type="submit" class="btn btn-primary" id="settle-btn" style="align-self: flex-end;">Execute Payment</button>
-          </div>
-        </form>
-        <div class="status-message" id="status-message"></div>
+        <div class="status-message" id="status-message" style="text-align: center; margin-top: 16px;"></div>
       </div>
+
+      <!-- Hidden form fields for demo values -->
+      <form id="settle-form" style="display: none;">
+        <input type="text" id="from" readonly value="" />
+        <input type="text" id="to" value="0x742d35cc6634c0532925a3b844bc9e7595f5be91" />
+        <input type="number" id="amount" value="0.1" />
+      </form>
 
       <!-- Results -->
       <div class="section">
@@ -3340,14 +3292,8 @@
             $('#from').value = senderAddr;
 
             // Update sender link in form
-            $('#sender-link').href = `https://testnet.arcscan.app/address/${senderAddr}`;
-
-            // Load sender balance
+            // Load sender balance and update wallet dashboard
             const senderBalance = await loadBalance(senderAddr);
-            $('#sender-balance').textContent = senderBalance.toFixed(2);
-            updateBalanceBar('sender', senderBalance);
-
-            // Update wallet dashboard
             updateWalletDashboard('sender', senderAddr, senderBalance);
           }
 
@@ -3355,10 +3301,6 @@
           const recipientAddress = $('#to').value;
           if (recipientAddress) {
             const recipientBalance = await loadBalance(recipientAddress);
-            $('#recipient-balance').textContent = recipientBalance.toFixed(2);
-            updateBalanceBar('recipient', recipientBalance);
-
-            // Update wallet dashboard
             updateWalletDashboard('recipient', recipientAddress, recipientBalance);
           }
 
@@ -3369,23 +3311,14 @@
         }
       }
 
-      // Update recipient balance and link when address changes
+      // Update recipient balance and dashboard when address changes
       $('#to').addEventListener('input', async (e) => {
         const address = e.target.value;
         if (address && address.length === 42 && address.startsWith('0x')) {
-          // Update link
-          $('#recipient-link').href = `https://testnet.arcscan.app/address/${address}`;
-
-          // Update balance
+          // Update balance and wallet dashboard
           const balance = await loadBalance(address);
-          $('#recipient-balance').textContent = balance.toFixed(2);
-          updateBalanceBar('recipient', balance);
-
-          // Update wallet dashboard
           updateWalletDashboard('recipient', address, balance);
         } else {
-          $('#recipient-balance').textContent = '--';
-          updateBalanceBar('recipient', 0);
           $('#dashboard-recipient-addr').textContent = 'Enter address below';
           $('#dashboard-recipient-balance').textContent = '--';
           $('#dashboard-recipient-usd').textContent = '--';
@@ -3396,7 +3329,7 @@
       $('#amount').addEventListener('input', updateTransferAmount);
 
       // Execute settlement with real-time SSE updates
-      $('#settle-form').addEventListener('submit', async (e) => {
+      $('#settle-btn').addEventListener('click', async (e) => {
         e.preventDefault();
 
         const btn = $('#settle-btn');
@@ -3525,7 +3458,7 @@
           // Reset button
           const btn = $('#settle-btn');
           btn.disabled = false;
-          btn.innerHTML = 'Execute Payment';
+          btn.innerHTML = 'Start Demo';
           btn.classList.remove('processing');
         }
       });
@@ -3618,10 +3551,7 @@
               <div class="kv-item"><span class="kv-key">Recipient Balance</span><span class="kv-value highlight">${newRecipientBalance.toFixed(2)} USDC</span></div>
             `;
 
-            $('#sender-balance').textContent = newSenderBalance.toFixed(2);
-            $('#recipient-balance').textContent = newRecipientBalance.toFixed(2);
-            updateBalanceBar('sender', newSenderBalance);
-            updateBalanceBar('recipient', newRecipientBalance);
+            // Update wallet dashboards with new balances
             updateWalletDashboard('sender', senderAddr, newSenderBalance);
             updateWalletDashboard('recipient', recipientAddr, newRecipientBalance);
           }, 2000);
