@@ -28,19 +28,28 @@ const controllerABI = require('./contracts/ArcAgentController.json').abi;
 const app = express();
 app.use(express.json());
 
+// Force no caching - prevent 304 responses by removing conditional headers
+app.use((req, res, next) => {
+  // Remove headers that trigger 304 responses
+  delete req.headers['if-modified-since'];
+  delete req.headers['if-none-match'];
+  // Set aggressive no-cache headers
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  next();
+});
+
 // Serve static files with cache disabled
 app.use(express.static('public', {
   etag: false,
   lastModified: false,
-  setHeaders: (res) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.setHeader('Surrogate-Control', 'no-store');
-  }
+  maxAge: 0,
+  cacheControl: false
 }));
 
-// CORS + cache headers for all responses
+// CORS headers
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
