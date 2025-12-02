@@ -91,8 +91,18 @@ class ZkmlClient {
 
   /**
    * Generate proof from decision/confidence (simplified API)
+   * @param {number} decision - 0 (deny) or 1 (approve)
+   * @param {number} confidence - Value between 0 and 1
    */
   async generateProofFromDecision(decision, confidence) {
+    // Validate inputs
+    if (decision !== 0 && decision !== 1) {
+      throw new Error('decision must be 0 or 1');
+    }
+    if (typeof confidence !== 'number' || confidence < 0 || confidence > 1) {
+      throw new Error('confidence must be a number between 0 and 1');
+    }
+
     // Map decision/confidence to transaction features
     const features = {
       budget: decision === 1 ? 15 : 5,
