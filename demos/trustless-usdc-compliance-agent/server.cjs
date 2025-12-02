@@ -27,9 +27,20 @@ const controllerABI = require('./contracts/ArcAgentController.json').abi;
 
 const app = express();
 app.use(express.json());
-app.use(express.static('public'));
 
-// CORS
+// Serve static files with cache disabled
+app.use(express.static('public', {
+  etag: false,
+  lastModified: false,
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+  }
+}));
+
+// CORS + cache headers for all responses
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
