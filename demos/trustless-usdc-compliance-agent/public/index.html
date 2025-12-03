@@ -2448,143 +2448,18 @@
 
       <!-- Payment Form -->
       <div class="section">
-        <div class="section-header">
-          <div class="section-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
-          </div>
-          <div class="section-title">Execute Payment</div>
-        </div>
         <form id="settle-form">
-          <div class="form-row" style="grid-template-columns: 1fr 1fr;">
-            <!-- Sender Address Card -->
-            <div class="address-card" id="sender-card">
-              <div class="address-card-header">
-                <span class="address-card-label">Sender (Agent Wallet)</span>
-                <a class="address-card-link" id="sender-link" href="#" target="_blank">View on Explorer ↗</a>
-              </div>
-              <div class="address-card-address">
-                <input type="text" id="from" readonly value="" placeholder="Loading..." />
-              </div>
-              <div class="address-card-balance">
-                <div class="balance-bar-container">
-                  <div class="balance-bar" id="sender-balance-bar" style="width: 0%;"></div>
-                </div>
-                <div class="balance-info">
-                  <span class="balance-amount"><span id="sender-balance">--</span> USDC</span>
-                  <span class="balance-label">Available Balance</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Recipient Address Card -->
-            <div class="address-card" id="recipient-card">
-              <div class="address-card-header">
-                <span class="address-card-label">Recipient</span>
-                <a class="address-card-link" id="recipient-link" href="https://testnet.arcscan.app/address/0x742d35cc6634c0532925a3b844bc9e7595f5be91" target="_blank">View on Explorer ↗</a>
-              </div>
-              <div class="address-card-address">
-                <input type="text" id="to" value="0x742d35cc6634c0532925a3b844bc9e7595f5be91" placeholder="0x..." />
-              </div>
-              <div class="address-card-balance">
-                <div class="balance-bar-container">
-                  <div class="balance-bar" id="recipient-balance-bar" style="width: 0%;"></div>
-                </div>
-                <div class="balance-info">
-                  <span class="balance-amount"><span id="recipient-balance">--</span> USDC</span>
-                  <span class="balance-label">Current Balance</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="form-row" style="grid-template-columns: 1fr auto; margin-top: 16px;">
-            <div class="form-group" style="margin-bottom: 0;">
-              <label>Amount (USDC)</label>
-              <input type="number" id="amount" step="0.01" value="0.1" placeholder="0.00" />
-            </div>
-            <button type="submit" class="btn btn-primary" id="settle-btn" style="align-self: flex-end;">Execute Payment</button>
+          <!-- Hidden inputs to preserve form data -->
+          <input type="hidden" id="from" value="" />
+          <input type="hidden" id="to" value="0x742d35cc6634c0532925a3b844bc9e7595f5be91" />
+          <input type="hidden" id="amount" value="0.1" />
+          <div style="display: flex; justify-content: center;">
+            <button type="submit" class="btn btn-primary" id="settle-btn">Start</button>
           </div>
         </form>
         <div class="status-message" id="status-message"></div>
       </div>
 
-      <!-- Results -->
-      <div class="section">
-        <div class="section-header">
-          <div class="section-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 11l3 3L22 4"/>
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-            </svg>
-          </div>
-          <div class="section-title">Payment Results</div>
-        </div>
-        <div class="results-grid">
-          <!-- Sender Screening -->
-          <div class="result-card" id="result-sender">
-            <div class="result-header">
-              <span class="result-title">Sender Screening</span>
-              <span class="result-badge" id="sender-badge">--</span>
-            </div>
-            <div class="kv-list" id="sender-content"></div>
-          </div>
-
-          <!-- Recipient Screening -->
-          <div class="result-card" id="result-recipient">
-            <div class="result-header">
-              <span class="result-title">Recipient Screening</span>
-              <span class="result-badge" id="recipient-badge">--</span>
-            </div>
-            <div class="kv-list" id="recipient-content"></div>
-          </div>
-
-          <!-- zkML Proof -->
-          <div class="result-card" id="result-proof">
-            <div class="result-header">
-              <span class="result-title">zkML Proof</span>
-              <span class="result-badge" id="proof-badge">--</span>
-            </div>
-            <div class="kv-list" id="proof-content"></div>
-          </div>
-
-          <!-- Transaction -->
-          <div class="result-card" id="result-tx">
-            <div class="result-header">
-              <span class="result-title">Transaction</span>
-              <span class="result-badge" id="tx-badge">--</span>
-            </div>
-            <div class="kv-list" id="tx-content"></div>
-          </div>
-        </div>
-
-        <!-- Transaction History -->
-        <div class="tx-history">
-          <div class="tx-history-title">Recent Transactions</div>
-          <div class="tx-history-list" id="tx-history-list">
-            <div class="tx-history-empty">No transactions yet</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Info Section -->
-      <div class="section info-section">
-        <h3>How It Works</h3>
-        <ul class="info-list">
-          <li><b>Circle Compliance Engine:</b> Real API screening against OFAC sanctions, PEP lists, and high-risk industries. Risk categories include SANCTIONS, ILLICIT_BEHAVIOR, TERRORIST_FINANCING.</li>
-          <li><b>ONNX Model:</b> Compliance results transform to model features (budget, trust, risk, etc.). Neural network outputs AUTHORIZED/DENIED decision.</li>
-          <li><b>zkML Proof:</b> JOLT-Atlas generates cryptographic proof that the model executed correctly on those exact inputs, producing that exact output.</li>
-          <li><b>ArcAgentController:</b> Smart contract verifies EIP-712 signature before releasing USDC. Creates immutable audit trail on Arc blockchain.</li>
-        </ul>
-        <h3 style="margin-top: 20px;">Resources</h3>
-        <ul class="info-list">
-          <li>
-            <a href="https://developers.circle.com/api-reference/w3s/compliance/screen-address" target="_blank">Circle Compliance Engine API</a> |
-            <a href="https://github.com/ICME-Lab/jolt-atlas" target="_blank">JOLT-Atlas</a> |
-            <a href="https://testnet.arcscan.app/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3" target="_blank">ArcAgentController</a>
-          </li>
-        </ul>
-      </div>
     </div>
 
     <!-- Confetti Canvas -->
@@ -2596,8 +2471,8 @@
 
       // Helper functions
       function $(sel) { return document.querySelector(sel); }
-      function show(el) { el.classList.add('visible'); }
-      function hide(el) { el.classList.remove('visible'); }
+      function show(el) { if (el) el.classList.add('visible'); }
+      function hide(el) { if (el) el.classList.remove('visible'); }
 
       function updateStep(num, state, options = {}) {
         const step = $(`#step-${num}`);
@@ -3169,6 +3044,8 @@
       // ============================================
       function addToHistory(txData) {
         const list = $('#tx-history-list');
+        if (!list) return; // Element removed
+
         // Remove empty message
         const empty = list.querySelector('.tx-history-empty');
         if (empty) empty.remove();
@@ -3334,28 +3211,33 @@
           const resp = await fetch(`${API}/health`);
           const data = await resp.json();
 
-          // Populate sender address and balance in form
+          // Populate sender address in form
           if (data.agent && data.agent.eoaWallet) {
             const senderAddr = data.agent.eoaWallet;
-            $('#from').value = senderAddr;
+            const fromEl = $('#from');
+            if (fromEl) fromEl.value = senderAddr;
 
-            // Update sender link in form
-            $('#sender-link').href = `https://testnet.arcscan.app/address/${senderAddr}`;
+            // Update sender link in form (if exists)
+            const senderLink = $('#sender-link');
+            if (senderLink) senderLink.href = `https://testnet.arcscan.app/address/${senderAddr}`;
 
-            // Load sender balance
+            // Load sender balance (if element exists)
             const senderBalance = await loadBalance(senderAddr);
-            $('#sender-balance').textContent = senderBalance.toFixed(2);
+            const senderBalanceEl = $('#sender-balance');
+            if (senderBalanceEl) senderBalanceEl.textContent = senderBalance.toFixed(2);
             updateBalanceBar('sender', senderBalance);
 
             // Update wallet dashboard
             updateWalletDashboard('sender', senderAddr, senderBalance);
           }
 
-          // Load recipient balance
-          const recipientAddress = $('#to').value;
+          // Load recipient balance (if elements exist)
+          const toEl = $('#to');
+          const recipientAddress = toEl ? toEl.value : null;
           if (recipientAddress) {
             const recipientBalance = await loadBalance(recipientAddress);
-            $('#recipient-balance').textContent = recipientBalance.toFixed(2);
+            const recipientBalanceEl = $('#recipient-balance');
+            if (recipientBalanceEl) recipientBalanceEl.textContent = recipientBalance.toFixed(2);
             updateBalanceBar('recipient', recipientBalance);
 
             // Update wallet dashboard
@@ -3369,31 +3251,41 @@
         }
       }
 
-      // Update recipient balance and link when address changes
-      $('#to').addEventListener('input', async (e) => {
-        const address = e.target.value;
-        if (address && address.length === 42 && address.startsWith('0x')) {
-          // Update link
-          $('#recipient-link').href = `https://testnet.arcscan.app/address/${address}`;
+      // Update recipient balance and link when address changes (only if element exists)
+      const toInput = $('#to');
+      if (toInput) {
+        toInput.addEventListener('input', async (e) => {
+          const address = e.target.value;
+          if (address && address.length === 42 && address.startsWith('0x')) {
+            // Update link (if exists)
+            const recipientLink = $('#recipient-link');
+            if (recipientLink) recipientLink.href = `https://testnet.arcscan.app/address/${address}`;
 
-          // Update balance
-          const balance = await loadBalance(address);
-          $('#recipient-balance').textContent = balance.toFixed(2);
-          updateBalanceBar('recipient', balance);
+            // Update balance (if exists)
+            const balance = await loadBalance(address);
+            const recipientBalanceEl = $('#recipient-balance');
+            if (recipientBalanceEl) recipientBalanceEl.textContent = balance.toFixed(2);
+            updateBalanceBar('recipient', balance);
 
-          // Update wallet dashboard
-          updateWalletDashboard('recipient', address, balance);
-        } else {
-          $('#recipient-balance').textContent = '--';
-          updateBalanceBar('recipient', 0);
-          $('#dashboard-recipient-addr').textContent = 'Enter address below';
-          $('#dashboard-recipient-balance').textContent = '--';
-          $('#dashboard-recipient-usd').textContent = '--';
-        }
-      });
+            // Update wallet dashboard
+            updateWalletDashboard('recipient', address, balance);
+          } else {
+            const recipientBalanceEl = $('#recipient-balance');
+            if (recipientBalanceEl) recipientBalanceEl.textContent = '--';
+            updateBalanceBar('recipient', 0);
+            const dashRecipientAddr = $('#dashboard-recipient-addr');
+            if (dashRecipientAddr) dashRecipientAddr.textContent = 'Enter address below';
+            const dashRecipientBalance = $('#dashboard-recipient-balance');
+            if (dashRecipientBalance) dashRecipientBalance.textContent = '--';
+            const dashRecipientUsd = $('#dashboard-recipient-usd');
+            if (dashRecipientUsd) dashRecipientUsd.textContent = '--';
+          }
+        });
+      }
 
-      // Update transfer amount when amount changes
-      $('#amount').addEventListener('input', updateTransferAmount);
+      // Update transfer amount when amount changes (only if element exists)
+      const amountInput = $('#amount');
+      if (amountInput) amountInput.addEventListener('input', updateTransferAmount);
 
       // Execute settlement with real-time SSE updates
       $('#settle-form').addEventListener('submit', async (e) => {
@@ -3525,122 +3417,149 @@
           // Reset button
           const btn = $('#settle-btn');
           btn.disabled = false;
-          btn.innerHTML = 'Execute Payment';
+          btn.innerHTML = 'Start';
           btn.classList.remove('processing');
         }
       });
 
       // Process final settlement data
       function processSettlementComplete(data) {
-        // Add links to steps 5 and 6
-        if (data.commitment && data.commitment.proofHash) {
+        // Add links to steps 5 and 6 (if elements exist)
+        const step5Link = $('#step-5-link');
+        const step6Link = $('#step-6-link');
+        const step6Details = $('#step-6-details');
+
+        if (data.commitment && data.commitment.proofHash && step5Link) {
           const proofHash = data.commitment.proofHash;
           const proofUrl = data.explorerUrl || `https://testnet.arcscan.app/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3`;
-          $('#step-5-link').innerHTML = `<a href="${proofUrl}" target="_blank" title="${proofHash}">View Proof on Arc</a>`;
+          step5Link.innerHTML = `<a href="${proofUrl}" target="_blank" title="${proofHash}">View Proof on Arc</a>`;
         }
-        if (data.explorerUrl) {
-          $('#step-6-link').innerHTML = `<a href="${data.explorerUrl}" target="_blank">View TX</a> | <a href="https://testnet.arcscan.app/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3" target="_blank">Contract</a>`;
-        } else {
-          $('#step-6-link').innerHTML = `<a href="https://testnet.arcscan.app/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3" target="_blank">View Contract</a>`;
+        if (step6Link) {
+          if (data.explorerUrl) {
+            step6Link.innerHTML = `<a href="${data.explorerUrl}" target="_blank">View TX</a> | <a href="https://testnet.arcscan.app/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3" target="_blank">Contract</a>`;
+          } else {
+            step6Link.innerHTML = `<a href="https://testnet.arcscan.app/address/0x9f172d57F4cC8Ec6b4cf6Cf1875777b1594934D3" target="_blank">View Contract</a>`;
+          }
         }
 
         // Update Step 6 data with duration
-        if (data.txHash) {
-          $('#step-6-details').innerHTML = `To: ${formatAddress(data.to)}<br>TX: ${formatHash(data.txHash)}<br>Duration: ${(data.duration / 1000).toFixed(1)}s`;
+        if (data.txHash && step6Details) {
+          step6Details.innerHTML = `To: ${formatAddress(data.to)}<br>TX: ${formatHash(data.txHash)}<br>Duration: ${(data.duration / 1000).toFixed(1)}s`;
         }
 
-        // Show sender screening
+        // Show sender screening (if elements exist)
         const senderCard = $('#result-sender');
-        show(senderCard);
         const senderBadge = $('#sender-badge');
-        senderBadge.textContent = data.screening.sender.result;
-        senderBadge.className = 'result-badge ' + (data.screening.sender.result === 'APPROVED' ? 'success' : 'error');
-        $('#sender-content').innerHTML = `
-          <div class="kv-item"><span class="kv-key">Address</span><span class="kv-value address">${formatAddress($('#from').value)}</span></div>
-          <div class="kv-item"><span class="kv-key">Source</span><span class="kv-value">${data.screening.sender.source}</span></div>
-          ${generateRiskAnalysis(data.screening.sender)}
-        `;
-
-        // Show recipient screening
-        const recipientCard = $('#result-recipient');
-        show(recipientCard);
-        const recipientBadge = $('#recipient-badge');
-        recipientBadge.textContent = data.screening.recipient.result;
-        recipientBadge.className = 'result-badge ' + (data.screening.recipient.result === 'APPROVED' ? 'success' : 'error');
-        $('#recipient-content').innerHTML = `
-          <div class="kv-item"><span class="kv-key">Address</span><span class="kv-value address">${formatAddress(data.to)}</span></div>
-          <div class="kv-item"><span class="kv-key">Source</span><span class="kv-value">${data.screening.recipient.source}</span></div>
-          ${generateRiskAnalysis(data.screening.recipient)}
-        `;
-
-        // Show zkML proof
-        const proofCard = $('#result-proof');
-        show(proofCard);
-        const proofBadge = $('#proof-badge');
-        proofBadge.textContent = data.proof.decision;
-        proofBadge.className = 'result-badge ' + (data.proof.decision === 'AUTHORIZED' ? 'success' : 'error');
-        $('#proof-content').innerHTML = `
-          <div class="kv-item"><span class="kv-key">Confidence</span><span class="kv-value highlight">${data.proof.confidence}%</span></div>
-          <div class="kv-item"><span class="kv-key">Prove Time</span><span class="kv-value">${data.proof.proveTimeMs}ms</span></div>
-          <div class="kv-item"><span class="kv-key">Verify Time</span><span class="kv-value">${data.proof.verifyTimeMs}ms</span></div>
-          <div class="kv-item"><span class="kv-key">Proof Hash</span><span class="kv-value hash">${formatHash(data.proof.hash)}</span></div>
-        `;
-
-        // Show transaction
-        const txCard = $('#result-tx');
-        show(txCard);
-        const txBadge = $('#tx-badge');
-        if (data.txHash) {
-          txBadge.textContent = 'SUCCESS';
-          txBadge.className = 'result-badge success';
-          $('#tx-content').innerHTML = `
-            <div class="kv-item"><span class="kv-key">Amount</span><span class="kv-value highlight">${data.amount} USDC</span></div>
-            <div class="kv-item"><span class="kv-key">To</span><span class="kv-value address">${formatAddress(data.to)}</span></div>
-            <div class="kv-item"><span class="kv-key">Duration</span><span class="kv-value">${(data.duration / 1000).toFixed(1)}s</span></div>
-            <div class="kv-item"><span class="kv-key">TX Hash</span><span class="kv-value"><a href="${data.explorerUrl}" target="_blank">${formatHash(data.txHash)}</a></span></div>
-            <div class="kv-item"><span class="kv-key">Sender Balance</span><span class="kv-value highlight">Updating...</span></div>
-            <div class="kv-item"><span class="kv-key">Recipient Balance</span><span class="kv-value highlight">Updating...</span></div>
+        const senderContent = $('#sender-content');
+        if (senderCard && senderBadge && senderContent) {
+          show(senderCard);
+          senderBadge.textContent = data.screening.sender.result;
+          senderBadge.className = 'result-badge ' + (data.screening.sender.result === 'APPROVED' ? 'success' : 'error');
+          const fromEl = $('#from');
+          senderContent.innerHTML = `
+            <div class="kv-item"><span class="kv-key">Address</span><span class="kv-value address">${formatAddress(fromEl ? fromEl.value : '')}</span></div>
+            <div class="kv-item"><span class="kv-key">Source</span><span class="kv-value">${data.screening.sender.source}</span></div>
+            ${generateRiskAnalysis(data.screening.sender)}
           `;
+        }
 
-          // Wait 2 seconds for blockchain to update, then fetch new balances
-          setTimeout(async () => {
-            const senderAddr = $('#from').value;
-            const recipientAddr = $('#to').value;
-            const newSenderBalance = await loadBalance(senderAddr);
-            const newRecipientBalance = await loadBalance(recipientAddr);
+        // Show recipient screening (if elements exist)
+        const recipientCard = $('#result-recipient');
+        const recipientBadge = $('#recipient-badge');
+        const recipientContent = $('#recipient-content');
+        if (recipientCard && recipientBadge && recipientContent) {
+          show(recipientCard);
+          recipientBadge.textContent = data.screening.recipient.result;
+          recipientBadge.className = 'result-badge ' + (data.screening.recipient.result === 'APPROVED' ? 'success' : 'error');
+          recipientContent.innerHTML = `
+            <div class="kv-item"><span class="kv-key">Address</span><span class="kv-value address">${formatAddress(data.to)}</span></div>
+            <div class="kv-item"><span class="kv-key">Source</span><span class="kv-value">${data.screening.recipient.source}</span></div>
+            ${generateRiskAnalysis(data.screening.recipient)}
+          `;
+        }
 
-            $('#tx-content').innerHTML = `
+        // Show zkML proof (if elements exist)
+        const proofCard = $('#result-proof');
+        const proofBadge = $('#proof-badge');
+        const proofContent = $('#proof-content');
+        if (proofCard && proofBadge && proofContent) {
+          show(proofCard);
+          proofBadge.textContent = data.proof.decision;
+          proofBadge.className = 'result-badge ' + (data.proof.decision === 'AUTHORIZED' ? 'success' : 'error');
+          proofContent.innerHTML = `
+            <div class="kv-item"><span class="kv-key">Confidence</span><span class="kv-value highlight">${data.proof.confidence}%</span></div>
+            <div class="kv-item"><span class="kv-key">Prove Time</span><span class="kv-value">${data.proof.proveTimeMs}ms</span></div>
+            <div class="kv-item"><span class="kv-key">Verify Time</span><span class="kv-value">${data.proof.verifyTimeMs}ms</span></div>
+            <div class="kv-item"><span class="kv-key">Proof Hash</span><span class="kv-value hash">${formatHash(data.proof.hash)}</span></div>
+          `;
+        }
+
+        // Show transaction (if elements exist)
+        const txCard = $('#result-tx');
+        const txBadge = $('#tx-badge');
+        const txContent = $('#tx-content');
+        if (txCard && txBadge && txContent) {
+          show(txCard);
+          if (data.txHash) {
+            txBadge.textContent = 'SUCCESS';
+            txBadge.className = 'result-badge success';
+            txContent.innerHTML = `
               <div class="kv-item"><span class="kv-key">Amount</span><span class="kv-value highlight">${data.amount} USDC</span></div>
               <div class="kv-item"><span class="kv-key">To</span><span class="kv-value address">${formatAddress(data.to)}</span></div>
               <div class="kv-item"><span class="kv-key">Duration</span><span class="kv-value">${(data.duration / 1000).toFixed(1)}s</span></div>
               <div class="kv-item"><span class="kv-key">TX Hash</span><span class="kv-value"><a href="${data.explorerUrl}" target="_blank">${formatHash(data.txHash)}</a></span></div>
-              <div class="kv-item"><span class="kv-key">Sender Balance</span><span class="kv-value highlight">${newSenderBalance.toFixed(2)} USDC</span></div>
-              <div class="kv-item"><span class="kv-key">Recipient Balance</span><span class="kv-value highlight">${newRecipientBalance.toFixed(2)} USDC</span></div>
+              <div class="kv-item"><span class="kv-key">Sender Balance</span><span class="kv-value highlight">Updating...</span></div>
+              <div class="kv-item"><span class="kv-key">Recipient Balance</span><span class="kv-value highlight">Updating...</span></div>
             `;
 
-            $('#sender-balance').textContent = newSenderBalance.toFixed(2);
-            $('#recipient-balance').textContent = newRecipientBalance.toFixed(2);
-            updateBalanceBar('sender', newSenderBalance);
-            updateBalanceBar('recipient', newRecipientBalance);
-            updateWalletDashboard('sender', senderAddr, newSenderBalance);
-            updateWalletDashboard('recipient', recipientAddr, newRecipientBalance);
-          }, 2000);
-        } else {
-          txBadge.textContent = 'NO TX';
-          txBadge.className = 'result-badge warning';
-          $('#tx-content').innerHTML = `
-            <div class="kv-item"><span class="kv-key">Status</span><span class="kv-value">Proof generated, no transfer</span></div>
-            <div class="kv-item"><span class="kv-key">Duration</span><span class="kv-value">${(data.duration / 1000).toFixed(1)}s</span></div>
-          `;
+            // Wait 2 seconds for blockchain to update, then fetch new balances
+            setTimeout(async () => {
+              const fromEl = $('#from');
+              const toEl = $('#to');
+              const senderAddr = fromEl ? fromEl.value : '';
+              const recipientAddr = toEl ? toEl.value : '';
+              const newSenderBalance = await loadBalance(senderAddr);
+              const newRecipientBalance = await loadBalance(recipientAddr);
+
+              if (txContent) {
+                txContent.innerHTML = `
+                  <div class="kv-item"><span class="kv-key">Amount</span><span class="kv-value highlight">${data.amount} USDC</span></div>
+                  <div class="kv-item"><span class="kv-key">To</span><span class="kv-value address">${formatAddress(data.to)}</span></div>
+                  <div class="kv-item"><span class="kv-key">Duration</span><span class="kv-value">${(data.duration / 1000).toFixed(1)}s</span></div>
+                  <div class="kv-item"><span class="kv-key">TX Hash</span><span class="kv-value"><a href="${data.explorerUrl}" target="_blank">${formatHash(data.txHash)}</a></span></div>
+                  <div class="kv-item"><span class="kv-key">Sender Balance</span><span class="kv-value highlight">${newSenderBalance.toFixed(2)} USDC</span></div>
+                  <div class="kv-item"><span class="kv-key">Recipient Balance</span><span class="kv-value highlight">${newRecipientBalance.toFixed(2)} USDC</span></div>
+                `;
+              }
+
+              const senderBalanceEl = $('#sender-balance');
+              const recipientBalanceEl = $('#recipient-balance');
+              if (senderBalanceEl) senderBalanceEl.textContent = newSenderBalance.toFixed(2);
+              if (recipientBalanceEl) recipientBalanceEl.textContent = newRecipientBalance.toFixed(2);
+              updateBalanceBar('sender', newSenderBalance);
+              updateBalanceBar('recipient', newRecipientBalance);
+              updateWalletDashboard('sender', senderAddr, newSenderBalance);
+              updateWalletDashboard('recipient', recipientAddr, newRecipientBalance);
+            }, 2000);
+          } else {
+            txBadge.textContent = 'NO TX';
+            txBadge.className = 'result-badge warning';
+            txContent.innerHTML = `
+              <div class="kv-item"><span class="kv-key">Status</span><span class="kv-value">Proof generated, no transfer</span></div>
+              <div class="kv-item"><span class="kv-key">Duration</span><span class="kv-value">${(data.duration / 1000).toFixed(1)}s</span></div>
+            `;
+          }
         }
 
         // Show success message
         const statusMsg = $('#status-message');
-        statusMsg.className = 'status-message visible ' + (data.approved ? 'success' : 'error');
-        const durationSec = (data.duration / 1000).toFixed(1);
-        statusMsg.textContent = data.approved
-          ? `Payment ID ${data.id} completed successfully in ${durationSec}s`
-          : `Payment ID ${data.id} denied by compliance`;
+        if (statusMsg) {
+          statusMsg.className = 'status-message visible ' + (data.approved ? 'success' : 'error');
+          const durationSec = (data.duration / 1000).toFixed(1);
+          statusMsg.textContent = data.approved
+            ? `Payment ID ${data.id} completed successfully in ${durationSec}s`
+            : `Payment ID ${data.id} denied by compliance`;
+        }
 
         // Update transaction history
         addToHistory(data);
@@ -3659,7 +3578,7 @@
         // Reset button
         const btn = $('#settle-btn');
         btn.disabled = false;
-        btn.innerHTML = 'Execute Payment';
+        btn.innerHTML = 'Start';
         btn.classList.remove('processing');
       }
 

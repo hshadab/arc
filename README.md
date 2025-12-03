@@ -1,19 +1,110 @@
 # Arc zkML Demos
 
-Collection of demos showcasing **zkML (zero-knowledge machine learning)** proofs for trustless AI agents on [Arc Network](https://www.arc.network).
+**Trustless AI Agent Commerce on Arc Blockchain**
 
-## Overview
+This repository demonstrates autonomous AI agents executing USDC payments with cryptographic proofs of compliance and decision-making. Built on [Arc Network](https://arc.network) with [NovaNet](https://novanet.xyz) zkML infrastructure.
 
-These demos use [JOLT-Atlas](https://github.com/ICME-Lab/jolt-atlas) to generate cryptographic proofs that ML models executed correctly, enabling trustless autonomous agents for Circle products on Arc.
+---
 
-## Demos
+## Three Demos
 
-| Demo | What it Does | Circle Products | Port |
-|------|-------------|----------------|------|
-| [**Trustless USDC Spending Agent**](demos/trustless-usdc-spending-agent/) | zkML-proven USDC payments with [x402](https://www.x402.org/) micropayments | [OOAK](https://github.com/circlefin/circle-ooak) | 8616 |
-| [**Trustless USDC Compliance Agent**](demos/trustless-usdc-compliance-agent/) | Agent owns wallet, dual-sided compliance screening before every settlement | [Compliance Engine](https://www.circle.com/wallets/compliance-engine) | 8619 |
+| Demo | Description | Key Integration | Port |
+|------|-------------|-----------------|------|
+| [Trustless USDC Spending Agent](demos/trustless-usdc-spending-agent/) | zkML-proven payments with Circle OOAK workflow hooks | x402 + OOAK | 8616 |
+| [Trustless USDC Compliance Agent](demos/trustless-usdc-compliance-agent/) | Autonomous agent with dual-sided compliance screening | Circle Compliance Engine | 8619 |
+| [Trustless Robot Commerce](demos/trustless-robot-commerce/) | Two-robot cross-chain payments for collision footage | Circle Gateway | 3000 |
 
-### What Makes These Demos "Trustless"
+---
+
+## Demo 1: Trustless USDC Spending Agent
+
+**AI agent payments with approval workflow hooks**
+
+```
+User Request → WalletInstanceAgent → @secure_tool: send_usdc
+                                          │
+                    ┌─────────────────────┼─────────────────────┐
+                    ▼                     ▼                     ▼
+            Approval Hook 1/3     Approval Hook 2/3     Approval Hook 3/3
+            ONNX Authorization    zkML Proof (x402)     EIP-712 Commitment
+                    │                     │                     │
+                    └─────────────────────┼─────────────────────┘
+                                          ▼
+                              Workflow Manager Decision
+                                          ▼
+                              USDC Transfer on Arc
+```
+
+**Stack**: Circle OOAK, x402 Protocol, JOLT-Atlas zkML, Arc Testnet
+
+**Run**:
+```bash
+cd demos/trustless-usdc-spending-agent
+npm install && npm start
+# Open http://localhost:8616
+```
+
+---
+
+## Demo 2: Trustless USDC Compliance Agent
+
+**Autonomous agent with regulatory compliance proofs**
+
+```
+Settlement Request → Dual-Sided Compliance Screening (Circle API)
+                              ▼
+              Transform to ONNX Model Features
+                              ▼
+              zkML Proof Generation (JOLT-Atlas)
+                              ▼
+              EIP-712 Commitment Signing
+                              ▼
+              USDC Settlement on Arc
+                              ▼
+              Immutable Audit Trail
+```
+
+**Stack**: Circle Compliance Engine, JOLT-Atlas zkML, Arc Testnet
+
+**Run**:
+```bash
+cd demos/trustless-usdc-compliance-agent
+npm install && npm start
+# Open http://localhost:8619
+```
+
+---
+
+## Demo 3: Trustless Robot Commerce
+
+**Two robots on different chains paying each other for data**
+
+```
+┌─────────────────────────┐              ┌─────────────────────────┐
+│     DELIVERYBOT         │              │      WITNESSBOT         │
+│     Arc Testnet         │              │      Base Sepolia       │
+│                         │              │                         │
+│  1. Collision detected  │              │                         │
+│  2. OpenMind AI decides │              │                         │
+│  3. zkML severity proof │              │                         │
+│  4. x402 payment request│─────────────▶│  5. HTTP 402 response   │
+│  6. Circle Gateway pay  │─────────────▶│  7. Verify on-chain     │
+│  9. Receive footage     │◀─────────────│  8. Analyze + return    │
+└─────────────────────────┘              └─────────────────────────┘
+```
+
+**Stack**: Circle Gateway, OpenMind LLM/VILA, JOLT-Atlas zkML, x402 Protocol
+
+**Run**:
+```bash
+cd demos/trustless-robot-commerce
+npm install && npm start
+# Open http://localhost:3000
+```
+
+---
+
+## What Makes These Demos "Trustless"
 
 Traditional AI agents just log their decisions—you have to trust they did what they claim. These demos use **zkML proofs** to cryptographically prove:
 
@@ -23,92 +114,100 @@ Traditional AI agents just log their decisions—you have to trust they did what
 
 This means you can deploy AI agents from untrusted sources and still verify their behavior.
 
-### Core Features
+---
 
-- **Cryptographic Proofs**: Every decision has a verifiable zkML proof (not just logs)
-- **On-Chain Audit Trail**: Proof hashes anchored to Arc blockchain
-- **Compliance Integration**: Circle Compliance Engine screening feeds into model decisions
-- **Wallet Ownership**: Agent owns wallet via private key - true ownership, no custodian
+## Core Technology
 
-## Architecture
+### JOLT-Atlas zkML
 
-All demos share the same core architecture:
+Zero-knowledge machine learning framework that generates cryptographic proofs of neural network inference. Located in [`jolt-atlas/`](jolt-atlas/).
 
-```
-User/Agent Request
-    ↓
-ONNX Model Inference
-    ↓
-JOLT-Atlas zkML Proof (~2-3s)
-    ↓
-EIP-712 Attestation
-    ↓
-On-Chain Commitment (Arc)
-    ↓
-Circle Product API
+```bash
+# Build the collision severity prover
+cd jolt-atlas
+cargo build --release --example collision_severity_json
+
+# Build the authorization model prover
+cargo build --release --example authorization
 ```
 
-## Repository Structure
+### Shared Components
 
-```
-arc/
-├── jolt-atlas/              # Shared zkML prover (from ICME-Lab)
-│   ├── examples/            # Rust examples
-│   ├── onnx-tracer/         # ONNX models
-│   └── zkml-jolt-core/      # Core SNARK prover
-│
-├── shared/                  # Common utilities
-│   ├── zkml-client/         # Node.js client for jolt-atlas
-│   └── arc-utils/           # Arc blockchain utilities
-│
-└── demos/
-    ├── trustless-usdc-spending-agent/ # Trustless USDC Spending Agent (port 8616)
-    └── trustless-usdc-compliance-agent/         # Trustless USDC Compliance Agent (port 8619)
-```
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| zkML Client | `shared/zkml-client/` | Node.js wrapper for JOLT-Atlas binary |
+| Arc Utils | `shared/arc-utils/` | Arc blockchain utilities |
+
+---
+
+## What's Real vs Simulated
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| zkML Proofs | Real | JOLT-Atlas SNARK prover generates real proofs |
+| ONNX Models | Real | 8-input neural networks for authorization/severity |
+| Circle Compliance | Real | Live API calls to Circle Compliance Engine |
+| Wallet Addresses | Real | Actual Arc Testnet and Base Sepolia addresses |
+| Gateway Payments | Simulated | Uses mock for cross-chain transfers |
+| OpenMind API | Simulated | Mock responses for AI decisions |
+
+---
 
 ## Quick Start
 
 ### Prerequisites
 
-- **Node.js**: 18.0.0 or higher
-- **Rust/Cargo**: For building jolt-atlas (install from https://rustup.rs/)
-- **System dependencies**: `sudo apt-get install pkg-config libssl-dev`
+- Node.js 18+
+- Rust (for building JOLT-Atlas)
+- Arc Testnet USDC ([faucet](https://faucet.circle.com))
 
-### 1. Build zkML Prover
+### 1. Build zkML Prover (Optional)
 
 ```bash
 cd jolt-atlas
+cargo build --release --example collision_severity_json
 cargo build --release --example authorization_json
 ```
 
-This builds the ~172MB prover binary at `target/release/examples/authorization_json`.
+Demos work with mock proofs if prover is not built.
 
 ### 2. Run a Demo
 
 ```bash
-# Trustless USDC Spending Agent
-cd demos/trustless-usdc-spending-agent
+# Demo 3: Robot Commerce (recommended to start)
+cd demos/trustless-robot-commerce
 npm install
-cp .env.example .env
-# Edit .env with your private key
 npm start
-# Open http://localhost:8616
-
-# Trustless USDC Compliance Agent (recommended)
-cd demos/trustless-usdc-compliance-agent
-npm install
-cp .env.example .env
-# Edit .env with your private key
-npm start
-# API at http://localhost:8619
+# Open http://localhost:3000 and click "Start Collision Demo"
 ```
 
 ### 3. Get Testnet Funds
 
-1. Go to https://faucet.circle.com/
+1. Go to [faucet.circle.com](https://faucet.circle.com)
 2. Select **Arc Testnet**
 3. Enter your wallet address
-4. Receive 10 USDC (request once per hour)
+4. Receive 10 USDC (once per hour)
+
+---
+
+## Repository Structure
+
+```
+arc/
+├── jolt-atlas/                    # JOLT-Atlas zkML prover (Rust)
+│   └── examples/
+│       ├── authorization/         # Transaction authorization model
+│       └── collision_severity_json/ # Collision severity model
+├── shared/
+│   ├── zkml-client/               # Node.js zkML wrapper
+│   └── arc-utils/                 # Blockchain utilities
+└── demos/
+    ├── trustless-usdc-spending-agent/    # Demo 1: OOAK + x402
+    ├── trustless-usdc-compliance-agent/  # Demo 2: Compliance Engine
+    └── trustless-robot-commerce/         # Demo 3: Robot Commerce
+```
+
+---
 
 ## Performance
 
@@ -117,57 +216,31 @@ npm start
 | Proof Generation | ~2.3 seconds |
 | Verification | ~350 ms |
 | Peak Memory | ~170 MB |
-| Model | Authorization (64 inputs, binary output) |
+| Model | 8 inputs, binary output |
 
-## What's Proven
+---
 
-Each demo generates zkML proofs that cryptographically attest:
+## Integration Partners
 
-- **Model executed correctly**: The exact ONNX model ran on the exact inputs
-- **Output is authentic**: The decision came from the model, not fabricated
-- **On-chain commitment**: Proof hash anchored to Arc blockchain
+| Partner | Integration | Demo |
+|---------|-------------|------|
+| [Circle](https://circle.com) | OOAK, Compliance Engine, Gateway | All demos |
+| [NovaNet](https://novanet.xyz) | zkML proving network | All demos |
+| [OpenMind](https://portal.openmind.org) | LLM + VILA AI models | Demo 3 |
+| [Coinbase](https://x402.org) | x402 micropayments | Demo 1, 3 |
 
-This enables trustless agents from untrusted sources to be used safely.
+---
 
-## Circle Product Integration
+## Resources
 
-### OOAK (Object Oriented Agent Kit)
-- Extends Circle's agent framework with zkML proofs
-- Integrates [x402](https://www.x402.org/) for HTTP 402 micropayments
-- Every payment decision is cryptographically verified
-- See [OOAK repository](https://github.com/circlefin/circle-ooak)
+- [Arc Network](https://arc.network) - L1 for agentic commerce
+- [Arc Docs](https://docs.arc.network) - Technical documentation
+- [NovaNet](https://novanet.xyz) - zkML proving network
+- [Circle Compliance Engine](https://www.circle.com/wallets/compliance-engine) - AML/CFT screening
+- [JOLT-Atlas](https://github.com/ICME-Lab/jolt-atlas) - zkML prover
+- [x402 Protocol](https://www.x402.org) - HTTP 402 micropayments
 
-### Compliance Engine
-- **Real Circle Compliance Engine API** integration ([API docs](https://developers.circle.com/api-reference/w3s/compliance/screen-address))
-- Dual-sided compliance screening (sender + recipient)
-- Screens against OFAC sanctions, PEP lists, high-risk industries
-- Risk categories: `SANCTIONS`, `ILLICIT_BEHAVIOR`, `HIGH_RISK_INDUSTRY`, `GAMBLING`, `TERRORIST_FINANCING`
-- zkML proofs attest compliance was evaluated before every transaction
-- Creates immutable audit trail for regulators
-- See [Compliance Engine documentation](https://www.circle.com/wallets/compliance-engine)
-
-## Development
-
-### Adding a New Demo
-
-1. Create directory in `demos/`
-2. Use shared utilities from `shared/`
-3. Follow existing demo patterns
-4. Add to this README
-
-### Shared Utilities
-
-```javascript
-// zkML client
-const { ZkmlClient } = require('../../shared/zkml-client/index.cjs');
-const zkml = new ZkmlClient();
-const proof = await zkml.generateProof({ budget: 15, trust: 7, ... });
-
-// Arc utilities
-const { createWallet, getUsdcBalance } = require('../../shared/arc-utils/index.cjs');
-const wallet = createWallet(privateKey);
-const balance = await getUsdcBalance(address);
-```
+---
 
 ## Security
 
@@ -175,15 +248,9 @@ const balance = await getUsdcBalance(address);
 
 - Never use mainnet private keys
 - Smart contracts are unaudited
-- See [SECURITY.md](SECURITY.md) for details
+- Demo code, not production-ready
 
-## Resources
-
-- [Arc Network](https://www.arc.network)
-- [Arc Docs](https://docs.arc.network)
-- [Circle Developer](https://developers.circle.com)
-- [JOLT-Atlas](https://github.com/ICME-Lab/jolt-atlas)
-- [ICME Labs](https://blog.icme.io/)
+---
 
 ## License
 

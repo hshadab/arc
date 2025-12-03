@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Accelerometer Test</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #0f0; }
+    .value { font-size: 48px; margin: 20px 0; }
+    .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+    .ok { background: #0a3; }
+    .warn { background: #a50; }
+    .err { background: #a00; }
+    button { font-size: 24px; padding: 15px 30px; margin: 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>🔧 Accelerometer Diagnostic</h1>
+  
+  <div id="status"></div>
+  
+  <h2>Live Values:</h2>
+  <div class="value">X: <span id="x">--</span></div>
+  <div class="value">Y: <span id="y">--</span></div>
+  <div class="value">Z: <span id="z">--</span></div>
+  <div class="value">Magnitude: <span id="mag">--</span></div>
+  
+  <h2>Event Count: <span id="count">0</span></h2>
+  
+  <button onclick="requestPermission()">🔓 Request Permission (iOS)</button>
+  <button onclick="startListening()">▶️ Start Listening</button>
+  
+  <h2>Debug Log:</h2>
+  <pre id="log"></pre>
+
+  <script>
+    let eventCount = 0;
+    
+    function log(msg) {
+      const el = document.getElementById('log');
+      el.textContent = new Date().toLocaleTimeString() + ': ' + msg + '\n' + el.textContent;
+      console.log(msg);
+    }
+    
+    function setStatus(msg, type) {
+      document.getElementById('status').innerHTML = '<div class="status ' + type + '">' + msg + '</div>';
+    }
+    
+    // Check support
+    log('Checking DeviceMotionEvent...');
+    if ('DeviceMotionEvent' in window) {
+      log('✓ DeviceMotionEvent exists');
+      setStatus('DeviceMotionEvent supported', 'ok');
+    } else {
+      log('✗ DeviceMotionEvent NOT supported');
+      setStatus('DeviceMotionEvent NOT supported - accelerometer unavailable', 'err');
+    }
+    
+    // Check if permission API exists (iOS 13+)
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+      log('iOS permission API detected - tap button to request');
+      setStatus('iOS detected - tap "Request Permission" button first', 'warn');
+    }
+    
+    // Check secure context
+    log('Secure context: ' + window.isSecureContext);
+    log('Protocol: ' + window.location.protocol);
+    if (!window.isSecureContext && window.location.protocol !== 'file:') {
+      log('⚠️ Not a secure context - may block sensors');
+    }
+    
+    function handleMotion(event) {
+      eventCount++;
+      document.getElementById('count').textContent = eventCount;
+      
+      const acc = event.accelerationIncludingGravity || event.acceleration;
+      
+      if (!acc) {
+        log('Event received but acceleration is null');
+        return;
+      }
+      
+      const x = acc.x || 0;
+      const y = acc.y || 0;
+      const z = acc.z || 0;
+      const mag = Math.sqrt(x*x + y*y + z*z);
+      
+      document.getElementById('x').textContent = x.toFixed(2);
+      document.getElementById('y').textContent = y.toFixed(2);
+      document.getElementById('z').textContent = z.toFixed(2);
+      document.getElementById('mag').textContent = mag.toFixed(2);
+      
+      if (eventCount === 1) {
+        log('First event received! Values: ' + x.toFixed(1) + ', ' + y.toFixed(1) + ', ' + z.toFixed(1));
+      }
+    }
+    
+    async function requestPermission() {
+      log('Requesting permission...');
+      try {
+        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+          const permission = await DeviceMotionEvent.requestPermission();
+          log('Permission result: ' + permission);
+          if (permission === 'granted') {
+            startListening();
+          }
+        } else {
+          log('No permission API - starting directly');
+          startListening();
+        }
+      } catch (e) {
+        log('Permission error: ' + e.message);
+      }
+    }
+    
+    function startListening() {
+      log('Adding devicemotion listener...');
+      window.addEventListener('devicemotion', handleMotion);
+      setStatus('Listening for motion events... shake your device!', 'ok');
+      log('Listener added - waiting for events...');
+    }
+    
+    // Auto-start on non-iOS
+    if (typeof DeviceMotionEvent.requestPermission !== 'function') {
+      startListening();
+    }
+  </script>
+</body>
+</html>

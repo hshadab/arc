@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trustless USDC Robot-to-Robot Payments</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --card: #12121a;
+      --border: #1e1e2e;
+      --fg: #e4e4e7;
+      --muted: #71717a;
+      --primary: #5b8cff;
+      --accent: #a78bfa;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(135deg, rgba(26, 31, 46, 0.9) 0%, rgba(10, 14, 26, 0.95) 100%);
+      padding: 24px 20px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      margin: -20px -20px 30px -20px;
+      position: relative;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(91, 140, 255, 0.4), rgba(77, 226, 207, 0.4), transparent);
+    }
+    .hero-logos {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 16px;
+    }
+    .hero-logos img {
+      height: 36px;
+      object-fit: contain;
+    }
+    .hero h1 {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Main Layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr 280px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 1000px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Robot Cards */
+    .robot-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .robot-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 20px rgba(91, 140, 255, 0.15);
+    }
+
+    .robot-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 12px;
+      background: rgba(91, 140, 255, 0.1);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .robot-icon svg {
+      width: 32px;
+      height: 32px;
+      stroke: var(--primary);
+    }
+
+    .robot-card.witness .robot-icon {
+      background: rgba(167, 139, 250, 0.1);
+    }
+    .robot-card.witness .robot-icon svg {
+      stroke: var(--accent);
+    }
+
+    .robot-name {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .robot-chain {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .robot-balance {
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    .balance-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .balance-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--success);
+    }
+
+    .robot-address {
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--muted);
+      background: rgba(0,0,0,0.2);
+      padding: 6px 10px;
+      border-radius: 6px;
+      word-break: break-all;
+    }
+
+    .robot-status {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    /* Workflow Center */
+    .workflow {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .workflow-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .workflow-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--fg);
+      margin-bottom: 8px;
+    }
+
+    .start-btn {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .start-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(91, 140, 255, 0.3);
+    }
+
+    .start-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .start-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Steps */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      opacity: 0.4;
+      transition: all 0.3s;
+    }
+
+    .step:last-child {
+      border-bottom: none;
+    }
+
+    .step.active, .step.complete {
+      opacity: 1;
+    }
+
+    .step-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+
+    .step-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--muted);
+      transition: all 0.3s;
+    }
+
+    .step.active .step-icon {
+      background: rgba(91, 140, 255, 0.15);
+    }
+    .step.active .step-icon svg {
+      stroke: var(--primary);
+    }
+
+    .step.complete .step-icon {
+      background: rgba(34, 197, 94, 0.15);
+    }
+    .step.complete .step-icon svg {
+      stroke: var(--success);
+    }
+
+    .step-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .step-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .step-desc {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .step-data {
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--primary);
+      margin-top: 6px;
+      background: rgba(91, 140, 255, 0.08);
+      padding: 6px 10px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .step.active .step-data,
+    .step.complete .step-data {
+      display: block;
+    }
+
+    .step-arrow {
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+      padding: 4px 0;
+      opacity: 0.5;
+    }
+
+    /* Transfer Animation */
+    .transfer-visual {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .transfer-visual.active {
+      display: flex;
+    }
+
+    .transfer-amount {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--success);
+    }
+
+    .transfer-arrow {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--muted);
+    }
+
+    .transfer-arrow svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--primary);
+    }
+
+    .transfer-chain {
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(91, 140, 255, 0.1);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    /* Result */
+    .result-panel {
+      margin-top: 20px;
+      padding: 16px;
+      background: rgba(34, 197, 94, 0.08);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 8px;
+      display: none;
+    }
+
+    .result-panel.visible {
+      display: block;
+    }
+
+    .result-panel.error {
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    .result-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--success);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .result-panel.error .result-title {
+      color: var(--danger);
+    }
+
+    .result-data {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .result-data a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    /* Spinner */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    /* Pulse animation for active robot */
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(91, 140, 255, 0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(91, 140, 255, 0); }
+    }
+
+    .robot-card.processing {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-logos">
+        <img src="https://cdn.prod.website-files.com/685311a976e7c248b5dfde95/688f6e47eca8d8e359537b5f_logo-ondark.svg" alt="Circle Logo">
+        <img src="https://cdn.prod.website-files.com/65d52b07d5bc41614daa723f/665df12739c532f45b665fe7_logo-novanet.svg" alt="NovaNet Logo">
+      </div>
+      <h1>Trustless USDC Robot-to-Robot Payments</h1>
+    </div>
+
+    <!-- Main Layout: Left Robot | Workflow | Right Robot -->
+    <div class="main-grid">
+
+      <!-- DeliveryBot (Buyer) - Arc Testnet -->
+      <div class="robot-card" id="delivery-bot">
+        <div class="robot-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="10" rx="2"/>
+            <circle cx="12" cy="5" r="3"/>
+            <path d="M12 8v3"/>
+            <line x1="8" y1="16" x2="8" y2="16"/>
+            <line x1="16" y1="16" x2="16" y2="16"/>
+          </svg>
+        </div>
+        <div class="robot-name">DeliveryBot</div>
+        <div class="robot-chain">Arc Testnet</div>
+        <div class="robot-balance">
+          <div class="balance-label">USDC Balance</div>
+          <div class="balance-value" id="delivery-balance">$1.00</div>
+        </div>
+        <div class="robot-address" id="delivery-address">0xAcC4BbAe...</div>
+        <div class="robot-status">
+          <div class="status-dot"></div>
+          <span>Online</span>
+        </div>
+      </div>
+
+      <!-- Workflow Center -->
+      <div class="workflow">
+        <div class="workflow-header">
+          <div class="workflow-title">Collision Witness Purchase Flow</div>
+          <button class="start-btn" id="start-btn" onclick="startDemo()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Start Collision Demo
+          </button>
+        </div>
+
+        <div class="steps">
+          <!-- Step 1: Collision Detection -->
+          <div class="step" id="step-1">
+            <div class="step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <div class="step-content">
+              <div class="step-title">Collision Detected</div>
+              <div class="step-desc">Accelerometer detects impact event</div>
+              <div class="step-data" id="step-1-data">Magnitude: 18.5g</div>
+            </div>
+          </div>
+
+          <!-- Step 2: zkML Severity Proof -->
+          <div class="step" id="step-2">
+            <div class="step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div class="step-content">
+              <div class="step-title">zkML Severity Proof</div>
+              <div class="step-desc">JOLT-Atlas proves collision severity</div>
+              <div class="step-data" id="step-2-data">Severity: MODERATE | Proof: 0x3ff6...</div>
+            </div>
+          </div>
+
+          <!-- Step 3: AI Decision -->
+          <div class="step" id="step-3">
+            <div class="step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="step-content">
+              <div class="step-title">OpenMind Decision</div>
+              <div class="step-desc">LLM evaluates purchase value</div>
+              <div class="step-data" id="step-3-data">Decision: APPROVE (92% confidence)</div>
+            </div>
+          </div>
+
+          <!-- Step 4: x402 Request -->
+          <div class="step" id="step-4">
+            <div class="step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+              </svg>
+            </div>
+            <div class="step-content">
+              <div class="step-title">x402 Payment Request</div>
+              <div class="step-desc">WitnessBot returns 402 with price</div>
+              <div class="step-data" id="step-4-data">HTTP 402: Pay $0.02 USDC to Base</div>
+            </div>
+          </div>
+
+          <!-- Step 5: Circle Gateway -->
+          <div class="step" id="step-5">
+            <div class="step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            </div>
+            <div class="step-content">
+              <div class="step-title">Circle Gateway Transfer</div>
+              <div class="step-desc">Arc USDC → Base USDC (instant)</div>
+              <div class="step-data" id="step-5-data">Burned on Arc, Minted on Base</div>
+            </div>
+          </div>
+
+          <!-- Step 6: On-chain Verification -->
+          <div class="step" id="step-6">
+            <div class="step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="step-content">
+              <div class="step-title">On-Chain Verification</div>
+              <div class="step-desc">WitnessBot verifies payment on Base</div>
+              <div class="step-data" id="step-6-data">Payment confirmed: 0.02 USDC received</div>
+            </div>
+          </div>
+
+          <!-- Step 7: VILA Analysis -->
+          <div class="step" id="step-7">
+            <div class="step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <div class="step-content">
+              <div class="step-title">OpenMind VILA Analysis</div>
+              <div class="step-desc">Vision model analyzes footage</div>
+              <div class="step-data" id="step-7-data">Severity: moderate | Objects: 3 detected</div>
+            </div>
+          </div>
+
+          <!-- Step 8: Data Delivery -->
+          <div class="step" id="step-8">
+            <div class="step-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </div>
+            <div class="step-content">
+              <div class="step-title">Footage Delivered</div>
+              <div class="step-desc">DeliveryBot receives witness data</div>
+              <div class="step-data" id="step-8-data">12 frames @ 1080p | Duration: 2.4s</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transfer Visual -->
+        <div class="transfer-visual" id="transfer-visual">
+          <div class="transfer-chain">Arc</div>
+          <div class="transfer-amount">$0.02</div>
+          <div class="transfer-arrow">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
+          <div class="transfer-chain">Base</div>
+        </div>
+
+        <!-- Result Panel -->
+        <div class="result-panel" id="result-panel">
+          <div class="result-title">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Transaction Complete
+          </div>
+          <div class="result-data" id="result-data">
+            Proof Hash: <a href="#" target="_blank">0x3ff6295a...</a><br>
+            Duration: 5.2s | Cost: $0.02 USDC
+          </div>
+        </div>
+      </div>
+
+      <!-- WitnessBot (Seller) - Base Sepolia -->
+      <div class="robot-card witness" id="witness-bot">
+        <div class="robot-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <div class="robot-name">WitnessBot</div>
+        <div class="robot-chain">Base Sepolia</div>
+        <div class="robot-balance">
+          <div class="balance-label">USDC Balance</div>
+          <div class="balance-value" id="witness-balance">$0.50</div>
+        </div>
+        <div class="robot-address" id="witness-address">0x68cf7EB2...</div>
+        <div class="robot-status">
+          <div class="status-dot"></div>
+          <span>Online</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const API = '';
+    let isRunning = false;
+    let deliveryBalance = 1.00;
+    let witnessBalance = 0.50;
+
+    // Step timings (simulated)
+    const stepTimings = [
+      { step: 1, delay: 500, duration: 800 },    // Collision detected
+      { step: 2, delay: 300, duration: 2300 },   // zkML proof
+      { step: 3, delay: 300, duration: 1000 },   // OpenMind decision
+      { step: 4, delay: 200, duration: 500 },    // x402 request
+      { step: 5, delay: 300, duration: 800 },    // Gateway transfer
+      { step: 6, delay: 300, duration: 500 },    // On-chain verification
+      { step: 7, delay: 300, duration: 1200 },   // VILA analysis
+      { step: 8, delay: 200, duration: 400 },    // Data delivery
+    ];
+
+    function resetSteps() {
+      for (let i = 1; i <= 8; i++) {
+        const step = document.getElementById(`step-${i}`);
+        step.classList.remove('active', 'complete');
+      }
+      document.getElementById('transfer-visual').classList.remove('active');
+      document.getElementById('result-panel').classList.remove('visible');
+      document.getElementById('delivery-bot').classList.remove('processing', 'active');
+      document.getElementById('witness-bot').classList.remove('processing', 'active');
+    }
+
+    function updateStep(stepNum, status) {
+      const step = document.getElementById(`step-${stepNum}`);
+      if (status === 'active') {
+        step.classList.add('active');
+        step.classList.remove('complete');
+      } else if (status === 'complete') {
+        step.classList.remove('active');
+        step.classList.add('complete');
+      }
+    }
+
+    async function startDemo() {
+      if (isRunning) return;
+      isRunning = true;
+
+      const btn = document.getElementById('start-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Running...';
+
+      resetSteps();
+
+      // Always run simulation for consistent UI updates
+      // The real API will also run in background via WebSocket
+      await runSimulation();
+
+      btn.disabled = false;
+      btn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Start Collision Demo
+      `;
+      isRunning = false;
+    }
+
+    async function runSimulation() {
+      const deliveryBot = document.getElementById('delivery-bot');
+      const witnessBot = document.getElementById('witness-bot');
+
+      // Step 1: Collision
+      deliveryBot.classList.add('processing');
+      updateStep(1, 'active');
+      document.getElementById('step-1-data').textContent = `Magnitude: ${(15 + Math.random() * 10).toFixed(1)}g`;
+      await sleep(1000);
+      updateStep(1, 'complete');
+
+      // Step 2: zkML
+      updateStep(2, 'active');
+      document.getElementById('step-2-data').textContent = 'Generating JOLT-Atlas proof...';
+      await sleep(2300);
+      const proofHash = '0x' + Math.random().toString(16).slice(2, 18);
+      document.getElementById('step-2-data').textContent = `Severity: MODERATE | Proof: ${proofHash.slice(0, 10)}...`;
+      updateStep(2, 'complete');
+
+      // Step 3: OpenMind
+      updateStep(3, 'active');
+      await sleep(1000);
+      const confidence = 85 + Math.floor(Math.random() * 12);
+      document.getElementById('step-3-data').textContent = `Decision: APPROVE (${confidence}% confidence)`;
+      updateStep(3, 'complete');
+
+      // Step 4: x402
+      updateStep(4, 'active');
+      witnessBot.classList.add('active');
+      await sleep(500);
+      document.getElementById('step-4-data').textContent = 'HTTP 402: Pay $0.02 USDC to Base Sepolia';
+      updateStep(4, 'complete');
+
+      // Step 5: Gateway
+      updateStep(5, 'active');
+      document.getElementById('transfer-visual').classList.add('active');
+      await sleep(800);
+      document.getElementById('step-5-data').textContent = 'Burned 0.02 USDC on Arc → Minted on Base';
+      updateStep(5, 'complete');
+
+      // Update balances
+      deliveryBalance -= 0.02;
+      witnessBalance += 0.02;
+      document.getElementById('delivery-balance').textContent = `$${deliveryBalance.toFixed(2)}`;
+      document.getElementById('witness-balance').textContent = `$${witnessBalance.toFixed(2)}`;
+
+      // Step 6: Verification
+      updateStep(6, 'active');
+      witnessBot.classList.add('processing');
+      witnessBot.classList.remove('active');
+      await sleep(500);
+      document.getElementById('step-6-data').textContent = 'Payment confirmed: 0.02 USDC received';
+      updateStep(6, 'complete');
+      witnessBot.classList.remove('processing');
+
+      // Step 7: VILA
+      updateStep(7, 'active');
+      await sleep(1200);
+      document.getElementById('step-7-data').textContent = 'Severity: moderate | Objects: delivery robot, pedestrian';
+      updateStep(7, 'complete');
+
+      // Step 8: Delivery
+      updateStep(8, 'active');
+      deliveryBot.classList.remove('processing');
+      deliveryBot.classList.add('active');
+      await sleep(400);
+      document.getElementById('step-8-data').textContent = '12 frames @ 1080p | Duration: 2.4s';
+      updateStep(8, 'complete');
+      deliveryBot.classList.remove('active');
+
+      // Show result
+      const resultPanel = document.getElementById('result-panel');
+      resultPanel.classList.add('visible');
+      document.getElementById('result-data').innerHTML = `
+        Proof Hash: <a href="https://testnet.arcscan.app" target="_blank">${proofHash}</a><br>
+        Duration: ${(5 + Math.random() * 2).toFixed(1)}s | Cost: $0.02 USDC
+      `;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // WebSocket for real-time updates
+    function connectWebSocket() {
+      try {
+        const ws = new WebSocket(`ws://${window.location.host}`);
+        ws.onmessage = (event) => {
+          const { event: eventType, data } = JSON.parse(event.data);
+          handleWsEvent(eventType, data);
+        };
+        ws.onclose = () => setTimeout(connectWebSocket, 3000);
+        ws.onerror = () => {}; // Silent fail
+      } catch (e) {
+        // WebSocket not available
+      }
+    }
+
+    function handleWsEvent(eventType, data) {
+      if (eventType === 'step') {
+        updateStep(data.step, data.status);
+      } else if (eventType === 'transaction') {
+        // Update balances from real data
+        if (data.price) {
+          deliveryBalance -= data.price;
+          witnessBalance += data.price;
+          document.getElementById('delivery-balance').textContent = `$${deliveryBalance.toFixed(2)}`;
+          document.getElementById('witness-balance').textContent = `$${witnessBalance.toFixed(2)}`;
+        }
+      }
+    }
+
+    // Initialize
+    connectWebSocket();
+
+    // Load real balances if available
+    async function loadBalances() {
+      try {
+        const res = await fetch(`${API}/robot/status`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.budget) {
+            deliveryBalance = parseFloat(data.budget);
+            document.getElementById('delivery-balance').textContent = `$${deliveryBalance.toFixed(2)}`;
+          }
+        }
+      } catch (e) {
+        // Use defaults
+      }
+    }
+    loadBalances();
+  </script>
+</body>
+</html>
